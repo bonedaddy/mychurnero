@@ -13,3 +13,10 @@ In the future we will use a sqlite database to cache this information so each ti
 # how often will churning happen
 
 to prevent churning to frequently, the default setting is to churn within 1hr -> 24hrs after an address last received a transaction. the end goal is that no two churn transactions will be broadcast at the same time, and the tx fee, as well as amounts ent will be varied. for now we will take a pretty naive approach of queueing all churn transactions within the predefined bounds, using the same transaction fee, and the amount that is unlocked for a given address whenever a churn is started.
+
+# links
+
+* https://www.reddit.com/r/Monero/comments/egxulr/we_need_better_ways_to_combine_multiple_outputs/fcbakt6/
+* https://www.reddit.com/r/Monero/comments/ekz7wg/what_is_the_latest_consensus_on_minimum_amount_of/
+* https://www.reddit.com/r/Monero/comments/a6b3ea/whats_the_latest_consensus_on_minimum_amount_of/
+* https://www.reddit.com/r/Monero/comments/70zalp/clarification_on_mrls_churning_comments/dn7a7wa/
