@@ -33,7 +33,8 @@ func TestClient(t *testing.T) {
 	require.NoError(t, client.CreateWallet(kid.String()))
 
 	// start mining
-	require.NoError(t, client.StartMining(testNetWallet, 2))
+	client.StartMining(testNetWallet, 2)
+	client.StartMining(testNetWallet, 2)
 
 	time.Sleep(time.Second * 10)
 
@@ -43,6 +44,7 @@ func TestClient(t *testing.T) {
 
 	addr, err := client.NewAddress(testNetWallet)
 	require.NoError(t, err)
+	fmt.Printf("new address: %s\n", addr)
 
 	resp, err := client.SweepDust(testNetWallet)
 	require.NoError(t, err)
