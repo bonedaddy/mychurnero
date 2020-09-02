@@ -39,6 +39,7 @@ func (c *Client) GetChurnableAddresses(walletName string) (*ChurnableAccounts, e
 		}
 		for _, addr := range addrs.Addresses {
 			if addr.Used {
+				// todo: get balance if it is 0 no point in using
 				acct.Subaddresses = append(acct.Subaddresses, ChurnableSubAdddress{
 					AddressIndex: addr.AddressIndex,
 					Address:      addr.Address,
