@@ -6,5 +6,5 @@ func (c *Client) SweepDust(walletName string) (*wallet.ResponseSweepDust, error)
 	if err := c.OpenWallet(walletName); err != nil {
 		return nil, err
 	}
-	return c.mw.SweepDust(&wallet.RequestSweepDust{})
+	return c.mw.SweepDust(&wallet.RequestSweepDust{GetTxHey: true, GetTxKeys: true})
 }

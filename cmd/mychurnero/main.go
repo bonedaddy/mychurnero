@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -14,6 +15,22 @@ func main() {
 	app.Usage = "automated churning application"
 	app.Description = "mychurnero is an automated churning application designed to reduce the overhead in churning and create a totally automatic solution. this application provides no guarantee in benefits, and should be used with caution, and with great care"
 	app.Commands = cli.Commands{
+		&cli.Command{
+			Name:  "sweep-dust",
+			Usage: "sweeps all dust",
+			Action: func(c *cli.Context) error {
+				cl, err := client.NewClient(c.String("wallet.rpc_address"))
+				if err != nil {
+					return err
+				}
+				resp, err := cl.SweepDust(c.String("wallet.name"))
+				if err != nil {
+					return err
+				}
+				fmt.Printf("%#v\n", resp)
+				return cl.Close()
+			},
+		},
 		&cli.Command{
 			Name:  "mining",
 			Usage: "mining related commands",

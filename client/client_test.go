@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -42,6 +43,10 @@ func TestClient(t *testing.T) {
 
 	addr, err := client.NewAddress(testNetWallet)
 	require.NoError(t, err)
+
+	resp, err := client.SweepDust(testNetWallet)
+	require.NoError(t, err)
+	fmt.Printf("%#v\n", resp)
 
 	err = client.Transfer(testNetWallet, addr, wallet.Float64ToXMR(0.1))
 	require.NoError(t, err)
