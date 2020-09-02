@@ -24,6 +24,12 @@ func New(ctx context.Context, dbPath, walletName, rpcAddr string) (*Service, err
 		cancel()
 		return nil, err
 	}
+	// open the wallet
+	if err := cl.OpenWallet(walletName); err != nil {
+		cancel()
+		cl.Close()
+		return nil, err
+	}
 	db, err := db.NewClient(dbPath)
 	if err != nil {
 		cancel()
@@ -33,6 +39,18 @@ func New(ctx context.Context, dbPath, walletName, rpcAddr string) (*Service, err
 	sched := txscheduler.New(ctx)
 	sched.Start()
 	return &Service{sched, cl, db, ctx, cancel}, nil
+}
+
+func (s *Service) MC() *client.Client {
+	return s.mc
+}
+
+func (s *Service) DB() *db.Client {
+	return s.db
+}
+
+func (s *Service) Context() context.Context {
+	return s.ctx
 }
 
 func (s *Service) Close() error {
