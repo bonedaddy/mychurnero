@@ -17,6 +17,47 @@ func main() {
 	app.Description = "mychurnero is an automated churning application designed to reduce the overhead in churning and create a totally automatic solution. this application provides no guarantee in benefits, and should be used with caution, and with great care"
 	app.Commands = cli.Commands{
 		&cli.Command{
+			Name:  "get-address",
+			Usage: "useful for returning sub addresses for an account index",
+			Action: func(c *cli.Context) error {
+				cl, err := client.NewClient(c.String("wallet.rpc_address"))
+				if err != nil {
+					return err
+				}
+				resp, err := cl.GetAddress(c.String("wallet.name"), c.Uint64("account.index"))
+				if err != nil {
+					return err
+				}
+				for _, r := range resp.Addresses {
+					fmt.Println("address index: ", r.AddressIndex)
+					fmt.Println("address: ", r.Address)
+					fmt.Println("used: ", r.Used)
+				}
+				return cl.Close()
+			},
+		},
+		&cli.Command{
+			Name:  "get-all-accounts",
+			Usage: "return all known accounts",
+			Action: func(c *cli.Context) error {
+				cl, err := client.NewClient(c.String("wallet.rpc_address"))
+				if err != nil {
+					return err
+				}
+				resp, err := cl.GetAllAccounts(c.String("wallet.name"))
+				if err != nil {
+					return err
+				}
+				for _, r := range resp.SubaddressAccounts {
+					fmt.Println("account index: ", r.AccountIndex)
+					fmt.Println("account base address: ", r.BaseAddress)
+					fmt.Println("balance: ", r.Balance)
+					fmt.Println("unlocked blance: ", r.UnlockedBalance)
+				}
+				return cl.Close()
+			},
+		},
+		&cli.Command{
 			Name:  "transfer",
 			Usage: "transfer funds to address",
 			Action: func(c *cli.Context) error {
