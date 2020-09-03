@@ -1,81 +1,84 @@
 package db
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
 
+	"github.com/jinzhu/gorm"
 	_ "github.com/mattn/go-sqlite3" //include SQLite driver
 )
 
-type User struct {
-	Username   string
-	Walletname string
-	UUID       string
-	Balance    float64
-}
-
 type Client struct {
 	// conn gorqlite.Connection
-	db  *sql.DB
+	db  *gorm.DB
 	mux sync.RWMutex
 }
 
+// NewClient returns a new database clients
 func NewClient(db_path string) (*Client, error) {
 	os.MkdirAll(filepath.Dir(db_path), 0755)
-	db_string := fmt.Sprintf(
+	db, err := gorm.Open("sqlite3", fmt.Sprintf(
 		"file:%s?secure_delete=true&cache=shared",
 		db_path,
-	)
-	db, err := sql.Open("sqlite3", db_string)
+	))
 	if err != nil {
 		return nil, err
 	}
-
 	return &Client{db: db}, nil
 }
 
+// Close is used to shutdown the database
 func (c *Client) Close() error {
 	c.mux.Lock()
 	defer c.mux.Unlock()
 	return c.db.Close()
 }
 
+// Destroy is used to tear down tbales if they exist
 func (c *Client) Destroy() error {
 	c.mux.Lock()
 	defer c.mux.Unlock()
-	d1 := `DROP TABLE IF EXISTS "users";`
-	d2 := `DROP TABLE IF EXISTS "wallets";`
-	d3 := `DROP TABLE IF EXISTS "deposits;"`
-	for _, statement := range []string{d1, d2, d3} {
-		if _, err := c.db.Exec(statement); err != nil {
-			return err
-		}
-	}
-	return nil
+	return c.db.DropTableIfExists(Address{}, Transfer{}).Error
 }
 
+// Setup is used to create the existing tables
 func (c *Client) Setup() error {
 	c.mux.Lock()
 	defer c.mux.Unlock()
-	create1 := `CREATE TABLE IF NOT EXISTS "addresses" (
-			"id" INTEGER PRIMARY KEY AUTOINCREMENT,
-			"wallet_name" TEXT NOT NULL,
-			"address" TEXT NOT NULL,
-			"balance" REAL NOT NULL	
-	);`
-	create2 := `CREATE TABLE IF NOT EXISTS "transfers" (
-			"id" INTEGER PRIMARY KEY AUTOINCREMENT,
-			"source_address" TEXT NOT NULL,
-			"destination_address" TEXT NOT NULL,
-			"tx_hash" TEXT NOT NULL,	
-	);`
-	for _, statement := range []string{create1, create2} {
-		if _, err := c.db.Exec(statement); err != nil {
-			return err
-		}
+	return c.db.AutoMigrate(Address{}, Transfer{}).Error
+}
+
+// AddAddress is used to store an address into the database, if a previous record with
+// this address exists it will be overwritten
+func (c *Client) AddAddress(walletName, address, baseAddress string, accountIndex, addressIndex, balance uint64) error {
+	// if this address already exists, update with latest balance
+	if addr, err := c.GetAddress(address); err == nil {
+		return c.db.Model(addr).Update("balance", balance).Error
 	}
-	return nil
+	return c.db.Create(&Address{
+		WalletName:   walletName,
+		AccountIndex: accountIndex,
+		AddressIndex: addressIndex,
+		BaseAddress:  baseAddress,
+		Address:      address,
+		Balance:      balance,
+	}).Error
+}
+
+// GetAddress returns the given address if it exists
+func (c *Client) GetAddress(address string) (*Address, error) {
+	var addr Address
+	return &addr, c.db.Model(&Address{}).First(&addr, "WHERE address = ?", address).Error
+}
+
+func (c *Client) GetTransaction(sourceAddress string) (*Transfer, error) {
+	var tx Transfer
+	return &tx, c.db.Model(&Transfer{}).First(&tx, "WHERE source_address = ?", sourceAddress).Error
+}
+
+func (c *Client) GetTransactions() ([]Transfer, error) {
+	var txs []Transfer
+	return txs, c.db.Model(&Transfer{}).Find(&txs).Error
 }
