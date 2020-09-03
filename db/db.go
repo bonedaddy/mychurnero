@@ -26,6 +26,7 @@ func NewClient(db_path string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	db.LogMode(true)
 	return &Client{db: db}, nil
 }
 

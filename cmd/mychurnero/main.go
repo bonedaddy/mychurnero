@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 
 	"github.com/bonedaddy/mychurnero/client"
+	"github.com/bonedaddy/mychurnero/service"
 	"github.com/monero-ecosystem/go-monero-rpc-client/wallet"
 	"github.com/urfave/cli/v2"
 )
@@ -16,6 +18,19 @@ func main() {
 	app.Usage = "automated churning application"
 	app.Description = "mychurnero is an automated churning application designed to reduce the overhead in churning and create a totally automatic solution. this application provides no guarantee in benefits, and should be used with caution, and with great care"
 	app.Commands = cli.Commands{
+		&cli.Command{
+			Name:  "service",
+			Usage: "start the churning service",
+			Action: func(c *cli.Context) error {
+				srv, err := service.New(context.Background(), c.String("db.path"), c.String("wallet.name"), c.String("wallet.rpc_address"))
+				if err != nil {
+					return err
+				}
+				srv.Start()
+				<-srv.Context().Done()
+				return nil
+			},
+		},
 		&cli.Command{
 			Name:    "get-churnable-addresses",
 			Aliases: []string{"gca"},
@@ -176,6 +191,11 @@ func main() {
 		},
 	}
 	app.Flags = []cli.Flag{
+		&cli.StringFlag{
+			Name:  "db.path",
+			Usage: "path to sqlite database",
+			Value: "mychurnerno_db",
+		},
 		&cli.StringFlag{
 			Name:    "wallet.name",
 			Aliases: []string{"wn"},
