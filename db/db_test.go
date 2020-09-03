@@ -37,8 +37,8 @@ func TestDB(t *testing.T) {
 	require.NoError(t, err)
 	addr, err := db.GetAddress(address)
 	require.NoError(t, err)
-	require.Equal(t, addr.Balance, 100)
-	require.Equal(t, addr.Address, addr)
+	require.Equal(t, int(addr.Balance), 100)
+	require.Equal(t, addr.Address, address)
 	require.Equal(t, addr.WalletName, walletName)
 
 	createdAt := addr.CreatedAt
@@ -51,9 +51,9 @@ func TestDB(t *testing.T) {
 
 	addr2, err := db.GetAddress(address)
 	require.NoError(t, err)
-	require.Equal(t, addr.Balance, 200)
-	require.Equal(t, addr.Address, addr)
-	require.Equal(t, addr.WalletName, walletName)
+	require.Equal(t, int(addr2.Balance), 200)
+	require.Equal(t, addr2.Address, address)
+	require.Equal(t, addr2.WalletName, walletName)
 
 	createdAt2 := addr2.CreatedAt
 	updatedAt2 := addr2.UpdatedAt

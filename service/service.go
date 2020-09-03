@@ -83,8 +83,8 @@ func (s *Service) Start() {
 						addrIndex := sub.AddressIndex
 						address := &db.Address{
 							WalletName:   s.walletName,
-							AccountIndex: acct.AccountIndex,
-							AddressIndex: addrIndex,
+							AccountIndex: uint(acct.AccountIndex),
+							AddressIndex: uint(addrIndex),
 							BaseAddress:  acct.BaseAddress,
 							Address:      addr,
 						}

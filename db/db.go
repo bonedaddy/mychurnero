@@ -2,12 +2,13 @@ package db
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"sync"
 
-	"github.com/jinzhu/gorm"
-	_ "github.com/mattn/go-sqlite3" //include SQLite driver
+	"gorm.io/driver/sqlite" //include SQLite driver
+	"gorm.io/gorm"
 )
 
 type Client struct {
@@ -19,14 +20,10 @@ type Client struct {
 // NewClient returns a new database clients
 func NewClient(db_path string) (*Client, error) {
 	os.MkdirAll(filepath.Dir(db_path), 0755)
-	db, err := gorm.Open("sqlite3", fmt.Sprintf(
-		"file:%s?secure_delete=true&cache=shared",
-		db_path,
-	))
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?secure_delete=true&cache=shared", db_path)), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
-	db.LogMode(true)
 	return &Client{db: db}, nil
 }
 
@@ -34,21 +31,25 @@ func NewClient(db_path string) (*Client, error) {
 func (c *Client) Close() error {
 	c.mux.Lock()
 	defer c.mux.Unlock()
-	return c.db.Close()
+	d, err := c.db.DB()
+	if err != nil {
+		log.Println(err)
+	}
+	return d.Close()
 }
 
 // Destroy is used to tear down tbales if they exist
 func (c *Client) Destroy() error {
 	c.mux.Lock()
 	defer c.mux.Unlock()
-	return c.db.DropTableIfExists(Address{}, Transfer{}).Error
+	return c.db.Migrator().DropTable(Address{}, Transfer{})
 }
 
 // Setup is used to create the existing tables
 func (c *Client) Setup() error {
 	c.mux.Lock()
 	defer c.mux.Unlock()
-	return c.db.AutoMigrate(Address{}, Transfer{}).Error
+	return c.db.Migrator().CreateTable(Address{}, Transfer{})
 }
 
 // AddAddress is used to store an address into the database, if a previous record with
@@ -60,23 +61,23 @@ func (c *Client) AddAddress(walletName, address, baseAddress string, accountInde
 	}
 	return c.db.Create(&Address{
 		WalletName:   walletName,
-		AccountIndex: accountIndex,
-		AddressIndex: addressIndex,
+		AccountIndex: uint(accountIndex),
+		AddressIndex: uint(addressIndex),
 		BaseAddress:  baseAddress,
 		Address:      address,
-		Balance:      balance,
+		Balance:      uint(balance),
 	}).Error
 }
 
 // GetAddress returns the given address if it exists
 func (c *Client) GetAddress(address string) (*Address, error) {
 	var addr Address
-	return &addr, c.db.Model(&Address{}).First(&addr, "WHERE address = ?", address).Error
+	return &addr, c.db.First(&addr, "address = ?", address).Error
 }
 
 func (c *Client) GetTransaction(sourceAddress string) (*Transfer, error) {
 	var tx Transfer
-	return &tx, c.db.Model(&Transfer{}).First(&tx, "WHERE source_address = ?", sourceAddress).Error
+	return &tx, c.db.Model(&Transfer{}).First(&tx, "source_address = ?", sourceAddress).Error
 }
 
 func (c *Client) GetTransactions() ([]Transfer, error) {

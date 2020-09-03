@@ -6,11 +6,11 @@ import "github.com/jinzhu/gorm"
 type Address struct {
 	gorm.Model
 	WalletName   string
-	AccountIndex uint64 // indicates the wallet account this is a part of
-	AddressIndex uint64 // indicates the subaddress index
+	AccountIndex uint   // indicates the wallet account this is a part of
+	AddressIndex uint   // indicates the subaddress index
 	BaseAddress  string // indicates the base wallet account address
 	Address      string `gorm:"unique"` // this is the wallet account subaddress
-	Balance      uint64
+	Balance      uint
 }
 
 // Transfer is a single transfer to churn an address
