@@ -7,8 +7,6 @@ func (c *Client) NewAccount(walletName, label string) (*wallet.ResponseCreateAcc
 	if err := c.OpenWallet(walletName); err != nil {
 		return nil, err
 	}
-	c.mux.Lock()
-	defer c.mux.Unlock()
 	return c.mw.CreateAccount(&wallet.RequestCreateAccount{
 		Label: label,
 	})
@@ -16,8 +14,6 @@ func (c *Client) NewAccount(walletName, label string) (*wallet.ResponseCreateAcc
 
 // NewAddress creates a new address under the given account index
 func (c *Client) NewAddress(walletName string, accountIndex uint64) (string, error) {
-	c.mux.Lock()
-	defer c.mux.Unlock()
 	if err := c.OpenWallet(walletName); err != nil {
 		return "", err
 	}
@@ -36,8 +32,6 @@ func (c *Client) GetAccounts(walletName string) (*wallet.ResponseGetAccounts, er
 	if err := c.OpenWallet(walletName); err != nil {
 		return nil, err
 	}
-	c.mux.Lock()
-	defer c.mux.Unlock()
 	return c.mw.GetAccounts(&wallet.RequestGetAccounts{})
 }
 

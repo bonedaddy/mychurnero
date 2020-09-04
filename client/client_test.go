@@ -36,7 +36,7 @@ func TestClient(t *testing.T) {
 	client.StartMining(testNetWallet, 2)
 	client.StartMining(testNetWallet, 2)
 
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * 1)
 
 	bal, err := client.WalletBalance(testNetWallet)
 	require.NoError(t, err)

@@ -4,8 +4,6 @@ import "github.com/monero-ecosystem/go-monero-rpc-client/wallet"
 
 // StopMining stops active mining processes
 func (c *Client) StopMining(walletName string) error {
-	c.mux.Lock()
-	defer c.mux.Unlock()
 	if err := c.OpenWallet(walletName); err != nil {
 		return err
 	}
@@ -14,8 +12,6 @@ func (c *Client) StopMining(walletName string) error {
 
 // StartMining starts actively mining blocks with the given threads
 func (c *Client) StartMining(walletName string, threads uint64) error {
-	c.mux.Lock()
-	defer c.mux.Unlock()
 	if err := c.OpenWallet(walletName); err != nil {
 		return err
 	}

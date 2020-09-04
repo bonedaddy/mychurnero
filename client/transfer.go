@@ -31,8 +31,6 @@ type TransferOpts struct {
 
 // Transfer is used to transfer funds from the given wallet to the destination address
 func (c *Client) Transfer(opts TransferOpts) error {
-	c.mux.Lock()
-	defer c.mux.Unlock()
 	if err := c.OpenWallet(opts.WalletName); err != nil {
 		return err
 	}

@@ -4,8 +4,6 @@ import "github.com/monero-ecosystem/go-monero-rpc-client/wallet"
 
 // CreateWallet is used to create a new monero wallet
 func (c *Client) CreateWallet(walletName string) error {
-	c.mux.Lock()
-	defer c.mux.Unlock()
 	return c.mw.CreateWallet(&wallet.RequestCreateWallet{
 		Filename: walletName,
 		Language: "English",
@@ -14,8 +12,6 @@ func (c *Client) CreateWallet(walletName string) error {
 
 // WalletBalance returns the entire unlocked balance of all accounts and subaddresses
 func (c *Client) WalletBalance(walletName string) (uint64, error) {
-	c.mux.Lock()
-	defer c.mux.Unlock()
 	if err := c.OpenWallet(walletName); err != nil {
 		return 0, err
 	}
@@ -33,7 +29,5 @@ func (c *Client) OpenWallet(walletName string) error {
 
 // SaveWallet stores the state of the current actively opened wallet
 func (c *Client) SaveWallet() error {
-	c.mux.Lock()
-	defer c.mux.Unlock()
 	return c.mw.Store()
 }
