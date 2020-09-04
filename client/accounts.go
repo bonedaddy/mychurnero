@@ -15,10 +15,21 @@ func (c *Client) GetAddress(walletName string, accountIndex uint64, addressIndex
 	if err := c.OpenWallet(walletName); err != nil {
 		return nil, err
 	}
-	c.mux.Lock()
-	defer c.mux.Unlock()
+
 	return c.mw.GetAddress(&wallet.RequestGetAddress{
 		AccountIndex: accountIndex,
 		AddressIndex: addressIndex,
+	})
+}
+
+// NewAccount is used to create a new account with an optional label
+func (c *Client) NewAccount(walletName, label string) (*wallet.ResponseCreateAccount, error) {
+	if err := c.OpenWallet(walletName); err != nil {
+		return nil, err
+	}
+	c.mux.Lock()
+	defer c.mux.Unlock()
+	return c.mw.CreateAccount(&wallet.RequestCreateAccount{
+		Label: label,
 	})
 }
