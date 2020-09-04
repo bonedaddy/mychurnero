@@ -1,20 +1,27 @@
 package client
 
+// ChurnableSubAdddress defines a given address that we can churn funds from
 type ChurnableSubAdddress struct {
 	AddressIndex uint64
 	Address      string
 }
+
+// ChurnableAccount defines a group of sub addresses we can churn funds from
 type ChurnableAccount struct {
 	AccountIndex uint64
 	BaseAddress  string
 	Subaddresses []ChurnableSubAdddress
 }
 
+// ChurnableAccounts bundles together all accounts we can churn funds from
 type ChurnableAccounts struct {
 	Accounts []ChurnableAccount
 }
 
-func (c *Client) GetChurnableAddresses(walletName string) (*ChurnableAccounts, error) {
+// GetChurnableAddresses is used to get addresses that we can churn by sending to ourselves.
+// The account index matching churnAccountIndex is skipped, as this is the account for which
+// we will use to send churned funds to
+func (c *Client) GetChurnableAddresses(walletName string, churnAccountIndex uint64) (*ChurnableAccounts, error) {
 	if err := c.OpenWallet(walletName); err != nil {
 		return nil, err
 	}
@@ -26,6 +33,10 @@ func (c *Client) GetChurnableAddresses(walletName string) (*ChurnableAccounts, e
 		Accounts: make([]ChurnableAccount, 0),
 	}
 	for _, acct := range accts.SubaddressAccounts {
+		// skip this account index as its used for receiving churned funds
+		if acct.AccountIndex == churnAccountIndex {
+			continue
+		}
 		churns.Accounts = append(churns.Accounts, ChurnableAccount{
 			AccountIndex: acct.AccountIndex,
 			BaseAddress:  acct.BaseAddress,

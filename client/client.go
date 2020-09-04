@@ -29,22 +29,6 @@ func (c *Client) Close() error {
 	return c.mw.CloseWallet()
 }
 
-func (c *Client) NewAddress(account_name string) (string, error) {
-	c.mux.Lock()
-	defer c.mux.Unlock()
-	if err := c.OpenWallet(account_name); err != nil {
-		return "", err
-	}
-	resp, err := c.mw.CreateAddress(&wallet.RequestCreateAddress{AccountIndex: 0})
-	if err != nil {
-		return "", err
-	}
-	if err != nil {
-		return "", err
-	}
-	return resp.Address, nil
-}
-
 func (c *Client) Refresh(account_name string) error {
 	c.mux.Lock()
 	defer c.mux.Unlock()

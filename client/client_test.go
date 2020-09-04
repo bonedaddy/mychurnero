@@ -42,7 +42,7 @@ func TestClient(t *testing.T) {
 	require.NoError(t, err)
 	t.Log("balance: ", bal)
 
-	addr, err := client.NewAddress(testNetWallet)
+	addr, err := client.NewAddress(testNetWallet, 0)
 	require.NoError(t, err)
 	fmt.Printf("new address: %s\n", addr)
 
