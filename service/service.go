@@ -68,6 +68,7 @@ func (s *Service) Context() context.Context {
 
 // Start is used to start the churning service
 func (s *Service) Start() {
+	s.createChurnAccount(s.churnAccountIndex)
 	go func() {
 		// call the ticker functions manually first
 		// since if we dont do this this we have to wait
@@ -101,6 +102,33 @@ func (s *Service) Close() error {
 		closeErr = multierr.Combine(closeErr, err)
 	}
 	return closeErr
+}
+
+// creates the account to churn funds ti if it does not exist
+func (s *Service) createChurnAccount(churnAccountIndex uint64) {
+	accts, err := s.mc.GetAllAccounts(s.walletName)
+	if err != nil {
+		log.Println("failed to get all accounts: ", err)
+		return
+	}
+	var churnAcctExists bool
+	for _, subacct := range accts.SubaddressAccounts {
+		if subacct.AccountIndex == churnAccountIndex {
+			churnAcctExists = true
+		}
+	}
+	if !churnAcctExists {
+		resp, err := s.mc.NewAccount(s.walletName, "churn-account")
+		if err != nil {
+			log.Println("failed to create churn account: ", err)
+			return
+		}
+		if resp.AccountIndex != churnAccountIndex {
+			log.Println("new created account does not match desried churn account index")
+			return
+		}
+	}
+
 }
 
 func (s *Service) handleGetChurnTick() {
