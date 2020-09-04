@@ -4,6 +4,7 @@ package client
 type ChurnableSubAdddress struct {
 	AddressIndex uint64
 	Address      string
+	Balance      uint64
 }
 
 // ChurnableAccount defines a group of sub addresses we can churn funds from
@@ -50,10 +51,19 @@ func (c *Client) GetChurnableAddresses(walletName string, churnAccountIndex uint
 		}
 		for _, addr := range addrs.Addresses {
 			if addr.Used {
+				bal, err := c.AddressBalance(walletName, addr.Address)
+				if err != nil {
+					return nil, err
+				}
+				// skip addresses with no balance
+				if bal <= 0 {
+					continue
+				}
 				// todo: get balance if it is 0 no point in using
 				acct.Subaddresses = append(acct.Subaddresses, ChurnableSubAdddress{
 					AddressIndex: addr.AddressIndex,
 					Address:      addr.Address,
+					Balance:      bal,
 				})
 			}
 		}

@@ -39,6 +39,7 @@ func (c *Client) Refresh(account_name string) error {
 	return err
 }
 
+// TODO(bonedaddy): accept account and subaddress index
 // look up balance for the given address (not the wallet)
 func (c *Client) AddressBalance(wallet_name string, address string) (uint64, error) {
 	c.mux.Lock()
