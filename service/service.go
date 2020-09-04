@@ -81,7 +81,10 @@ func (s *Service) Start() {
 		for {
 			select {
 			case <-getChurnTicker.C:
+				log.Println("getting churnable addresses")
 				s.handleGetChurnTick()
+				log.Println("scheduling transactions")
+				s.createTransactions()
 			case <-s.ctx.Done():
 				return
 			}
@@ -128,7 +131,11 @@ func (s *Service) createChurnAccount(churnAccountIndex uint64) {
 			return
 		}
 	}
+}
 
+// returns an address we can use to send churned funds to
+func (s *Service) getChurnToAddress() (string, error) {
+	return s.mc.NewAddress(s.walletName, s.churnAccountIndex)
 }
 
 func (s *Service) handleGetChurnTick() {
@@ -151,4 +158,57 @@ func (s *Service) handleGetChurnTick() {
 		}
 	}
 	fmt.Printf("got churnable addresses\n%#v\n\n", addrs)
+}
+
+func (s *Service) createTransactions() {
+	addrs, err := s.db.GetUnscheduledAddresses()
+	if err != nil {
+		return
+	}
+	for _, addr := range addrs {
+		churnToAddr, err := s.getChurnToAddress()
+		if err != nil {
+			log.Println("failed to get churn to address: ", err)
+			continue
+		}
+		priority := client.RandomPriority()
+		resp, err := s.mc.Transfer(client.TransferOpts{
+			Priority:       priority,
+			Destinations:   map[string]uint64{churnToAddr: uint64(addr.Balance)},
+			AccountIndex:   uint64(addr.AccountIndex),
+			SubaddrIndices: []uint64{uint64(addr.AddressIndex)},
+			WalletName:     s.walletName,
+			DoNotRelay:     true,
+		})
+		if err != nil {
+			log.Println("failed to create transfer: ", err)
+			continue
+		}
+		log.Printf("created unrelayed transaction with metadata\n%s\n", resp.TxMetadata)
+		// TODO(bonedaddy): enable better send time control for now default to in 1 hr
+		// store unrelayed tranasaction
+		sendTime := time.Now().Add(time.Hour)
+		if err := s.db.ScheduleTransaction(addr.Address, resp.TxMetadata, sendTime); err != nil {
+			log.Println("failed to schedule transaction: ", err)
+		}
+		// TODO(bonedaddy): enable better scheduling instead of creating a bunch of goroutiens
+		go func(sourceAddr string) {
+			now := time.Now()
+			diff := sendTime.Sub(now)
+			ticker := time.NewTicker(diff)
+			<-ticker.C
+			ticker.Stop()
+			txData, err := s.db.GetTransaction(sourceAddr)
+			if err != nil {
+				log.Println("failed to get transaction data from db: ", err)
+				return
+			}
+			txHash, err := s.mc.Relay(s.walletName, txData.TxMetadata)
+			if err != nil {
+				log.Println("failed to relay transaction: ", err)
+				return
+			}
+			log.Println("relayed transaction with hash ", txHash)
+		}(addr.Address)
+	}
 }
