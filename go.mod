@@ -5,7 +5,6 @@ go 1.14
 require (
 	github.com/bastiankoetsier/schedule v0.0.0-20180404104308-b46cab1e4e40
 	github.com/gorhill/cronexpr v0.0.0-20180427100037-88b0669f7d75 // indirect
-	github.com/gorilla/rpc v1.2.0 // indirect
 	github.com/jinzhu/gorm v1.9.16
 	github.com/mattn/go-sqlite3 v1.14.2 // indirect
 	github.com/monero-ecosystem/go-monero-rpc-client v0.0.0-20200124164006-0afb4abdfc3c
@@ -16,3 +15,5 @@ require (
 	gorm.io/driver/sqlite v1.1.1
 	gorm.io/gorm v1.20.0
 )
+
+replace github.com/monero-ecosystem/go-monero-rpc-client v0.0.0-20200124164006-0afb4abdfc3c => github.com/bonedaddy/go-monero-rpc-client v0.0.0-20200904065722-23238e3895c4

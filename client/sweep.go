@@ -9,7 +9,7 @@ func (c *Client) SweepDust(walletName string) (*wallet.ResponseSweepDust, error)
 	if err := c.OpenWallet(walletName); err != nil {
 		return nil, err
 	}
-	return c.mw.SweepDust(&wallet.RequestSweepDust{GetTxHey: true, GetTxKeys: true})
+	return c.mw.SweepDust(&wallet.RequestSweepDust{GetTxHex: true, GetTxKeys: true})
 }
 
 // SweepAll is used to sweep all funds from the given account index sending it to the destination address
