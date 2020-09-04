@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"math/rand"
 
 	"github.com/monero-ecosystem/go-monero-rpc-client/wallet"
@@ -27,12 +26,13 @@ type TransferOpts struct {
 	AccountIndex   uint64   // defaults to 0
 	SubaddrIndices []uint64 // options, default is nil which means all
 	WalletName     string
+	DoNotRelay     bool
 }
 
 // Transfer is used to transfer funds from the given wallet to the destination address
-func (c *Client) Transfer(opts TransferOpts) error {
+func (c *Client) Transfer(opts TransferOpts) (*wallet.ResponseTransfer, error) {
 	if err := c.OpenWallet(opts.WalletName); err != nil {
-		return err
+		return nil, err
 	}
 
 	var destinations []*wallet.Destination
@@ -45,19 +45,20 @@ func (c *Client) Transfer(opts TransferOpts) error {
 	}
 
 	resp, err := c.mw.Transfer(&wallet.RequestTransfer{
-		Mixing:       10,
-		RingSize:     11,
-		Priority:     opts.Priority,
-		GetTxHex:     true,
-		GetTxKey:     true,
-		AccountIndex: opts.AccountIndex,
-		Destinations: destinations,
+		Mixing:        10,
+		RingSize:      11,
+		Priority:      opts.Priority,
+		GetTxHex:      true,
+		GetTxKey:      true,
+		GetTxMetadata: true,
+		DoNotRelay:    opts.DoNotRelay,
+		AccountIndex:  opts.AccountIndex,
+		Destinations:  destinations,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	fmt.Printf("%#v\n", resp)
-	return nil
+	return resp, nil
 }
 
 // RandomPriority returns a random transaction priority
