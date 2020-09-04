@@ -47,8 +47,13 @@ func (c *Client) Setup() error {
 // AddAddress is used to store an address into the database, if a previous record with
 // this address exists it will be overwritten
 func (c *Client) AddAddress(walletName, address, baseAddress string, accountIndex, addressIndex, balance uint64) error {
-	// if this address already exists, update with latest balance
+	// if this address already exists, update with latest balance as long as it is not scheduled
 	if addr, err := c.GetAddress(address); err == nil {
+		// if address has scheduled transaction skip it
+		if addr.Scheduled == 1 {
+			log.Printf("address %s has already scheduled transaction\n", address)
+			return nil
+		}
 		return c.db.Model(addr).Update("balance", balance).Error
 	}
 	return c.db.Create(&Address{
@@ -59,6 +64,15 @@ func (c *Client) AddAddress(walletName, address, baseAddress string, accountInde
 		Address:      address,
 		Balance:      uint(balance),
 	}).Error
+}
+
+// SetScheduled marks an address as having a scheduled transaction
+func (c *Client) SetScheduled(address string, scheduled uint) error {
+	addr, err := c.GetAddress(address)
+	if err != nil {
+		return err
+	}
+	return c.db.Model(addr).Update("scheduled", scheduled).Error
 }
 
 // GetAddress returns the given address if it exists

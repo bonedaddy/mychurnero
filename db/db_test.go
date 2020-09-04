@@ -38,15 +38,18 @@ func TestAddress(t *testing.T) {
 		accountIndex uint64
 		addressIndex uint64
 		balance      uint64
+		schedule     uint
 	}
 
 	tests := []struct {
-		name        string
-		args        args
-		wantBalance uint64
+		name         string
+		args         args
+		wantBalance  uint64
+		wantSchedule uint
 	}{
-		{"1", args{walletName, address, baseAddress, 0, 0, 100}, 100},
-		{"2", args{walletName, address, baseAddress, 0, 0, 200}, 200},
+		{"1", args{walletName, address, baseAddress, 0, 0, 100, 0}, 100, 0},
+		{"2", args{walletName, address, baseAddress, 0, 0, 200, 1}, 200, 0},
+		{"3", args{walletName, address, baseAddress, 0, 0, 200, 1}, 200, 1}, // trigger already scheduled case
 	}
 
 	for _, tt := range tests {
@@ -65,6 +68,24 @@ func TestAddress(t *testing.T) {
 			require.Equal(t, int(addr.Balance), int(tt.wantBalance))
 			require.Equal(t, addr.Address, address)
 			require.Equal(t, addr.WalletName, walletName)
+			require.Equal(t, addr.Scheduled, tt.wantSchedule)
+
+			err = db.SetScheduled(address, tt.args.schedule)
+			require.NoError(t, err)
+
+			addr, err = db.GetAddress(tt.args.address)
+			require.NoError(t, err)
+			require.Equal(t, int(addr.Scheduled), int(tt.args.schedule))
+
+			// now add address to trigger scheduled case handling
+			require.NoError(t, db.AddAddress(
+				tt.args.wallet,
+				tt.args.address,
+				tt.args.baseAddress,
+				tt.args.accountIndex,
+				tt.args.addressIndex,
+				tt.args.balance,
+			))
 
 		})
 	}
