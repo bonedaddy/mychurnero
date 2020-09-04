@@ -34,7 +34,7 @@ func (c *Client) TxConfirmed(walletName, txHash string) (bool, error) {
 	if err := c.OpenWallet(walletName); err != nil {
 		return false, err
 	}
-	resp, err := c.mw.GetTransferByTxID(&wallet.RequestGetTransferByTxID{})
+	resp, err := c.mw.GetTransferByTxID(&wallet.RequestGetTransferByTxID{TxID: txHash})
 	if err != nil {
 		return false, err
 	}
