@@ -24,6 +24,7 @@ type Transfer struct {
 	gorm.Model
 	SourceAddress string    // the sending address
 	TxMetadata    string    // the transaction metadata we use to relay
+	TxHash        string    // the hash of the transaction once relayed
 	SendTime      time.Time // the time at which we will relay the transaction
 	Spent         uint      // indicates if the tx is spent (ie broadcasted), 0 = false 1 = true
 }

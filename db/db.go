@@ -1,6 +1,7 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -115,6 +116,28 @@ func (c *Client) ScheduleTransaction(sourceAddress, txMetadata string, sendTime 
 	})
 }
 
+// DeleteTransaction is used to remove transaction data from our database
+// we do this once the transaction has been confirmed and to purge evidence of the churn
+func (c *Client) DeleteTransaction(sourceAddress, txHash string) error {
+	tx, err := c.GetTransaction(sourceAddress)
+	if err != nil {
+		return err
+	}
+	if tx.TxHash != txHash {
+		return errors.New("invalid transaction found")
+	}
+	if err := c.db.Delete(tx).Error; err != nil {
+		return err
+	}
+
+	addr, err := c.GetAddress(sourceAddress)
+	if err != nil {
+		return err
+	}
+
+	return c.db.Delete(addr).Error
+}
+
 // AddTransaction is used to store a transaction that we need to relay
 func (c *Client) AddTransaction(sourceAddress, txMetadata string, sendTime time.Time) error {
 	return c.db.Create(&Transfer{
@@ -123,6 +146,21 @@ func (c *Client) AddTransaction(sourceAddress, txMetadata string, sendTime time.
 		SendTime:      sendTime,
 		Spent:         0,
 	}).Error
+}
+
+// GetRelayedTransactions returns all currently relayed transactions
+func (c *Client) GetRelayedTransactions() ([]Transfer, error) {
+	var txs []Transfer
+	return txs, c.db.Model(&Transfer{}).Where(`tx_hash NOT NULL AND tx_hash != ""`).Find(&txs).Error
+}
+
+// SetTxHash sets the transaction hash for the corresponding churn
+func (c *Client) SetTxHash(sourceAddress string, txHash string) error {
+	tx, err := c.GetTransaction(sourceAddress)
+	if err != nil {
+		return err
+	}
+	return c.db.Model(tx).Update("tx_hash", txHash).Error
 }
 
 // SetTxSpent sets the spent field on a transfer entry
