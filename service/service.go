@@ -138,18 +138,13 @@ func (s *Service) handleGetChurnTick() {
 	}
 	for _, acct := range addrs.Accounts {
 		for _, sub := range acct.Subaddresses {
-			bal, err := s.MC().AddressBalance(s.walletName, sub.Address)
-			if err != nil {
-				log.Println("failed to get balance")
-				log.Fatal(err)
-			}
 			if err := s.db.AddAddress(
 				s.walletName,
 				sub.Address,
 				acct.BaseAddress,
 				acct.AccountIndex,
 				sub.AddressIndex,
-				bal); err != nil {
+				sub.Balance); err != nil {
 				log.Println("failed to add address")
 				log.Fatal(err)
 			}
