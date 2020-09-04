@@ -15,18 +15,18 @@ var (
 	baseAddress = "somebaseaddress"
 )
 
-func TestDB(t *testing.T) {
+func TestAddress(t *testing.T) {
 	db, err := NewClient(dbPath)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		os.RemoveAll(dbPath)
 		err := db.Destroy()
 		if err != nil {
 			t.Error(err)
 		}
 		err = db.Close()
 		require.NoError(t, err)
+		os.RemoveAll(dbPath)
 	})
 
 	require.NoError(t, db.Setup())
@@ -94,13 +94,13 @@ func TestTransaction(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		os.RemoveAll(dbPath)
 		err := db.Destroy()
 		if err != nil {
 			t.Error(err)
 		}
 		err = db.Close()
 		require.NoError(t, err)
+		os.RemoveAll(dbPath)
 	})
 
 	require.NoError(t, db.Setup())
