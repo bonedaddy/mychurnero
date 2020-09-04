@@ -86,11 +86,29 @@ func (c *Client) GetAddress(address string) (*Address, error) {
 	return &addr, c.db.First(&addr, "address = ?", address).Error
 }
 
+// GetAddresses returns all known addresses
+func (c *Client) GetAddresses() ([]Address, error) {
+	var addrs []Address
+	return addrs, c.db.Model(&Transfer{}).Find(&addrs).Error
+}
+
+// AddTransaction is used to store a transaction that we need to relay
+func (c *Client) AddTransaction(sourceAddress, txMetadata string, sendTime time.Time) error {
+	return c.db.Create(&Transfer{
+		SourceAddress: sourceAddress,
+		TxMetadata:    txMetadata,
+		SendTime:      sendTime,
+		Spent:         0,
+	}).Error
+}
+
+// GetTransaction returns the first matching transaction
 func (c *Client) GetTransaction(sourceAddress string) (*Transfer, error) {
 	var tx Transfer
 	return &tx, c.db.Model(&Transfer{}).First(&tx, "source_address = ?", sourceAddress).Error
 }
 
+// GetTransactions returns all known transactions
 func (c *Client) GetTransactions() ([]Transfer, error) {
 	var txs []Transfer
 	return txs, c.db.Model(&Transfer{}).Find(&txs).Error
