@@ -6,12 +6,21 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/bonedaddy/mychurnero/client"
 	"github.com/bonedaddy/mychurnero/db"
 	"github.com/bonedaddy/mychurnero/txscheduler"
 	"go.uber.org/multierr"
+)
+
+// TODO(bonedaddy): move these to configuration arguments in New call
+var (
+	min     int64 = 1
+	max     int64 = 10
+	minTime       = time.Minute
+	maxTime       = time.Minute * 10
 )
 
 // Service provides monero churning service that takes care of automatically scanning the wallet
@@ -190,9 +199,8 @@ func (s *Service) createTransactions() {
 			continue
 		}
 		log.Printf("created unrelayed transaction with metadata hash: %s\n", s.hashMetadata(resp.TxMetadata))
-		// TODO(bonedaddy): enable better send time control for now default to in 1 hr
-		// store unrelayed tranasaction
-		sendTime := time.Now().Add(time.Hour)
+		delay := s.getRandomSendDelay()
+		sendTime := time.Now().Add(delay)
 		if err := s.db.ScheduleTransaction(addr.Address, resp.TxMetadata, sendTime); err != nil {
 			log.Println("failed to schedule transaction: ", err)
 		}
@@ -221,4 +229,15 @@ func (s *Service) createTransactions() {
 func (s *Service) hashMetadata(txMetadata string) string {
 	hashed := sha256.Sum256([]byte(txMetadata))
 	return hex.EncodeToString(hashed[:])
+}
+
+func (s *Service) getRandomSendDelay() time.Duration {
+	random := rand.Int63n(max)
+	if random == 0 { // if 0 increase by 1
+		random = random + 1
+	}
+	// TODO(bonedaddy): handle values other than minute
+	dur := time.Duration(random) * time.Minute
+	log.Printf("using delay of %v minutes\n", dur.Minutes())
+	return dur
 }
