@@ -75,6 +75,12 @@ func (c *Client) SetScheduled(address string, scheduled uint) error {
 	return c.db.Model(addr).Update("scheduled", scheduled).Error
 }
 
+// GetUnscheduledAddresses returns all unscheduled addresses
+func (c *Client) GetUnscheduledAddresses() ([]Address, error) {
+	var addrs []Address
+	return addrs, c.db.Model(&Address{}).Where("scheduled = 0").Find(&addrs).Error
+}
+
 // GetAddress returns the given address if it exists
 func (c *Client) GetAddress(address string) (*Address, error) {
 	var addr Address
@@ -84,7 +90,7 @@ func (c *Client) GetAddress(address string) (*Address, error) {
 // GetAddresses returns all known addresses
 func (c *Client) GetAddresses() ([]Address, error) {
 	var addrs []Address
-	return addrs, c.db.Model(&Transfer{}).Find(&addrs).Error
+	return addrs, c.db.Model(&Address{}).Find(&addrs).Error
 }
 
 // AddTransaction is used to store a transaction that we need to relay

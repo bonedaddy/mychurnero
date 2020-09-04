@@ -42,14 +42,15 @@ func TestAddress(t *testing.T) {
 	}
 
 	tests := []struct {
-		name         string
-		args         args
-		wantBalance  uint64
-		wantSchedule uint
+		name            string
+		args            args
+		wantBalance     uint64
+		wantSchedule    uint
+		wantUnscheduled int
 	}{
-		{"1", args{walletName, address, baseAddress, 0, 0, 100, 0}, 100, 0},
-		{"2", args{walletName, address, baseAddress, 0, 0, 200, 1}, 200, 0},
-		{"3", args{walletName, address, baseAddress, 0, 0, 200, 1}, 200, 1}, // trigger already scheduled case
+		{"1", args{walletName, address, baseAddress, 0, 0, 100, 0}, 100, 0, 1},
+		{"2", args{walletName, address, baseAddress, 0, 0, 200, 1}, 200, 0, 0},
+		{"3", args{walletName, address, baseAddress, 0, 0, 200, 1}, 200, 1, 0}, // trigger already scheduled case
 	}
 
 	for _, tt := range tests {
@@ -87,6 +88,12 @@ func TestAddress(t *testing.T) {
 				tt.args.balance,
 			))
 
+			// TODO(bonedaddy): add better unscheduled address testing
+			addrs, err := db.GetUnscheduledAddresses()
+			if tt.wantSchedule > 0 {
+				require.NoError(t, err)
+			}
+			require.Len(t, addrs, int(tt.wantUnscheduled))
 		})
 	}
 
