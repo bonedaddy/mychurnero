@@ -3,7 +3,6 @@ package db
 import (
 	"fmt"
 	"log"
-	"sync"
 	"time"
 
 	"gorm.io/driver/sqlite" //include SQLite driver
@@ -11,9 +10,7 @@ import (
 )
 
 type Client struct {
-	// conn gorqlite.Connection
-	db  *gorm.DB
-	mux sync.RWMutex
+	db *gorm.DB
 }
 
 // NewClient returns a new database clients
@@ -30,8 +27,6 @@ func NewClient(db_path string) (*Client, error) {
 
 // Close is used to shutdown the database
 func (c *Client) Close() error {
-	c.mux.Lock()
-	defer c.mux.Unlock()
 	d, err := c.db.DB()
 	if err != nil {
 		log.Println(err)
@@ -41,15 +36,11 @@ func (c *Client) Close() error {
 
 // Destroy is used to tear down tbales if they exist
 func (c *Client) Destroy() error {
-	c.mux.Lock()
-	defer c.mux.Unlock()
 	return c.db.Migrator().DropTable(Address{}, Transfer{})
 }
 
 // Setup is used to create the existing tables
 func (c *Client) Setup() error {
-	c.mux.Lock()
-	defer c.mux.Unlock()
 	return c.db.Migrator().CreateTable(&Address{}, &Transfer{})
 }
 
