@@ -96,7 +96,11 @@ func main() {
 				if err != nil {
 					return err
 				}
-				if err := cl.Transfer(c.String("wallet.name"), c.String("dest.address"), wallet.Float64ToXMR(c.Float64("value"))); err != nil {
+				if err := cl.Transfer(client.TransferOpts{
+					WalletName:   c.String("wallet.name"),
+					Destinations: map[string]uint64{c.String("dest.address"): wallet.Float64ToXMR(c.Float64("value"))},
+					Priority:     client.RandomPriority(),
+				}); err != nil {
 					return err
 				}
 				return cl.Close()
