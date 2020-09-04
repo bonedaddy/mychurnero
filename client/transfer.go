@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"math/rand"
 
 	"github.com/monero-ecosystem/go-monero-rpc-client/wallet"
 )
@@ -58,4 +59,10 @@ func (c *Client) Transfer(opts TransferOpts) error {
 	}
 	fmt.Printf("%#v\n", resp)
 	return nil
+}
+
+// RandomPriority returns a random transaction priority
+// note that this can potentially become expensive
+func RandomPriority() wallet.Priority {
+	return wallet.Priority(rand.Int63n(3))
 }

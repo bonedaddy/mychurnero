@@ -52,7 +52,7 @@ func TestClient(t *testing.T) {
 	err = client.Transfer(TransferOpts{
 		WalletName:   testNetWallet,
 		Destinations: map[string]uint64{addr: wallet.Float64ToXMR(0.1)},
-		Priority:     wallet.PriorityDefault,
+		Priority:     RandomPriority(),
 		AccountIndex: 0,
 	})
 	require.NoError(t, err)
