@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -126,4 +127,5 @@ func (s *Service) handleGetChurnTick() {
 			}
 		}
 	}
+	fmt.Printf("got churnable addresses\n%#v\n\n", addrs)
 }
