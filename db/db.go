@@ -93,6 +93,28 @@ func (c *Client) GetAddresses() ([]Address, error) {
 	return addrs, c.db.Model(&Address{}).Find(&addrs).Error
 }
 
+// ScheduleTransaction is used to persist transaction metadata information to disk, marking the
+// associated address as being scheduled. This means anytime during startup, we can reschedule transactions
+// in case the program exists with pending transactions
+func (c *Client) ScheduleTransaction(sourceAddress, txMetadata string, sendTime time.Time) error {
+	return c.db.Transaction(func(db *gorm.DB) error {
+		var addr Address
+		// make sure address exists
+		if err := db.Model(&Address{}).Where("address = ?", sourceAddress).First(&addr).Error; err != nil {
+			return err
+		}
+		if err := db.Model(addr).Update("scheduled", 1).Error; err != nil {
+			return err
+		}
+		return db.Create(&Transfer{
+			SourceAddress: sourceAddress,
+			TxMetadata:    txMetadata,
+			SendTime:      sendTime,
+			Spent:         0,
+		}).Error
+	})
+}
+
 // AddTransaction is used to store a transaction that we need to relay
 func (c *Client) AddTransaction(sourceAddress, txMetadata string, sendTime time.Time) error {
 	return c.db.Create(&Transfer{
