@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"time"
@@ -187,7 +189,7 @@ func (s *Service) createTransactions() {
 			log.Println("failed to create transfer: ", err)
 			continue
 		}
-		log.Printf("created unrelayed transaction with metadata\n%s\n", resp.TxMetadata)
+		log.Printf("created unrelayed transaction with metadata hash: %s\n", s.hashMetadata(resp.TxMetadata))
 		// TODO(bonedaddy): enable better send time control for now default to in 1 hr
 		// store unrelayed tranasaction
 		sendTime := time.Now().Add(time.Hour)
@@ -214,4 +216,9 @@ func (s *Service) createTransactions() {
 			log.Println("relayed transaction with hash ", txHash)
 		}(addr.Address)
 	}
+}
+
+func (s *Service) hashMetadata(txMetadata string) string {
+	hashed := sha256.Sum256([]byte(txMetadata))
+	return hex.EncodeToString(hashed[:])
 }
