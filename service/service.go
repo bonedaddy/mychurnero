@@ -92,8 +92,15 @@ func (s *Service) Start() {
 		getChurnTicker := time.NewTicker(time.Minute * 20)
 		defer getChurnTicker.Stop()
 
+		// TODO(bonedaddy): better time handling
+		deleteTxTicker := time.NewTicker(time.Minute * 1)
+		defer deleteTxTicker.Stop()
+
 		for {
 			select {
+			case <-deleteTxTicker.C:
+				log.Println("handling tx confirmation checks")
+				s.deleteSpentTransfers()
 			case <-getChurnTicker.C:
 				log.Println("getting churnable addresses")
 				s.handleGetChurnTick()
@@ -222,7 +229,33 @@ func (s *Service) createTransactions() {
 				return
 			}
 			log.Println("relayed transaction with hash ", txHash)
+			if err := s.db.SetTxHash(sourceAddr, txHash); err != nil {
+				log.Println("failed to set tx hash: ", err)
+				return
+			}
 		}(addr.Address)
+	}
+}
+
+func (s *Service) deleteSpentTransfers() {
+	txs, err := s.db.GetRelayedTransactions()
+	if err != nil {
+		log.Println("failed to get relayed transactions: ", err)
+		return
+	}
+	for _, tx := range txs {
+		confirmed, err := s.mc.TxConfirmed(s.walletName, tx.TxHash)
+		if err != nil {
+			log.Println("failed to get tx confirmed status: ", err)
+			continue
+		}
+		if confirmed {
+			if err := s.db.DeleteTransaction(tx.SourceAddress, tx.TxHash); err != nil {
+				log.Println("failed to delete transaction from database: ", err)
+				continue
+			}
+			log.Printf("successfully purged tx information\nhash: %s, sender: %s\n", tx.TxHash, tx.SourceAddress)
+		}
 	}
 }
 
