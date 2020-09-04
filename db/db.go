@@ -6,9 +6,11 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"gorm.io/driver/sqlite" //include SQLite driver
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type Client struct {
@@ -20,7 +22,16 @@ type Client struct {
 // NewClient returns a new database clients
 func NewClient(db_path string) (*Client, error) {
 	os.MkdirAll(filepath.Dir(db_path), 0755)
-	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?secure_delete=true&cache=shared", db_path)), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?secure_delete=true&cache=shared", db_path)), &gorm.Config{
+		Logger: logger.New(
+			log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+			logger.Config{
+				SlowThreshold: time.Second,  // Slow SQL threshold
+				LogLevel:      logger.Error, // Log level
+				Colorful:      false,        // Disable color
+			},
+		),
+	})
 	if err != nil {
 		return nil, err
 	}
