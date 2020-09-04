@@ -62,28 +62,10 @@ func TestAddress(t *testing.T) {
 
 			addr, err := db.GetAddress(tt.args.address)
 			require.NoError(t, err)
-			require.Equal(t, int(addr.Balance), 100)
+			require.Equal(t, int(addr.Balance), int(tt.wantBalance))
 			require.Equal(t, addr.Address, address)
 			require.Equal(t, addr.WalletName, walletName)
 
-			time.Sleep(time.Second * 1) // sleep let time pass for future test
-
-			require.NoError(t, db.AddAddress(
-				tt.args.wallet,
-				tt.args.address,
-				tt.args.baseAddress,
-				tt.args.accountIndex,
-				tt.args.addressIndex,
-				tt.args.balance,
-			)) // test update capabilities
-
-			addr2, err := db.GetAddress(tt.args.address)
-			require.NoError(t, err)
-			require.Equal(t, int(addr2.Balance), 200)
-			require.Equal(t, addr2.Address, address)
-			require.Equal(t, addr2.WalletName, walletName)
-			require.True(t, addr.CreatedAt.Equal(addr2.CreatedAt))
-			require.True(t, addr2.CreatedAt.After(addr.CreatedAt))
 		})
 	}
 

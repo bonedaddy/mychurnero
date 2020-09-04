@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -17,7 +18,10 @@ type Client struct {
 
 // NewClient returns a new database clients
 func NewClient(db_path string) (*Client, error) {
-	db, err := gorm.Open(sqlite.Open(db_path), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf(
+		"file:%s?secure_delete=true&cache=shared",
+		db_path,
+	)), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
