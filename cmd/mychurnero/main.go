@@ -22,7 +22,7 @@ func main() {
 			Name:  "service",
 			Usage: "start the churning service",
 			Action: func(c *cli.Context) error {
-				srv, err := service.New(context.Background(), c.Uint64("account.index"), c.String("db.path"), c.String("wallet.name"), c.String("wallet.rpc_address"))
+				srv, err := service.New(context.Background(), c.Uint64("churn.index"), c.String("db.path"), c.String("wallet.name"), c.String("wallet.rpc_address"))
 				if err != nil {
 					return err
 				}
@@ -39,7 +39,7 @@ func main() {
 				if err != nil {
 					return err
 				}
-				resp, err := cl.GetChurnableAddresses(c.String("wallet.name"), c.Uint64("account.index"))
+				resp, err := cl.GetChurnableAddresses(c.String("wallet.name"), c.Uint64("churn.index"))
 				if err != nil {
 					return err
 				}
@@ -219,6 +219,11 @@ func main() {
 			Aliases: []string{"ai"},
 			Usage:   "account index to use",
 			Value:   0,
+		},
+		&cli.Uint64Flag{
+			Name:  "churn.index",
+			Usage: "account index to use for churning to",
+			Value: 1,
 		},
 		&cli.Float64Flag{
 			Name:  "value",
