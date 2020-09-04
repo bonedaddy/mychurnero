@@ -106,7 +106,7 @@ func (s *Service) Close() error {
 
 // creates the account to churn funds ti if it does not exist
 func (s *Service) createChurnAccount(churnAccountIndex uint64) {
-	accts, err := s.mc.GetAllAccounts(s.walletName)
+	accts, err := s.mc.GetAccounts(s.walletName)
 	if err != nil {
 		log.Println("failed to get all accounts: ", err)
 		return

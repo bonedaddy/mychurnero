@@ -31,7 +31,8 @@ func (c *Client) NewAddress(walletName string, accountIndex uint64) (string, err
 	return resp.Address, nil
 }
 
-func (c *Client) GetAllAccounts(walletName string) (*wallet.ResponseGetAccounts, error) {
+// GetAccounts returns all accounts under the wallet
+func (c *Client) GetAccounts(walletName string) (*wallet.ResponseGetAccounts, error) {
 	if err := c.OpenWallet(walletName); err != nil {
 		return nil, err
 	}
@@ -40,6 +41,7 @@ func (c *Client) GetAllAccounts(walletName string) (*wallet.ResponseGetAccounts,
 	return c.mw.GetAccounts(&wallet.RequestGetAccounts{})
 }
 
+// GetAddress returns address information for a given account index optionally filtered by subaddress index
 func (c *Client) GetAddress(walletName string, accountIndex uint64, addressIndex ...uint64) (*wallet.ResponseGetAddress, error) {
 	if err := c.OpenWallet(walletName); err != nil {
 		return nil, err

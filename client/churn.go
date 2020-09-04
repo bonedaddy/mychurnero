@@ -26,7 +26,7 @@ func (c *Client) GetChurnableAddresses(walletName string, churnAccountIndex uint
 	if err := c.OpenWallet(walletName); err != nil {
 		return nil, err
 	}
-	accts, err := c.GetAllAccounts(walletName)
+	accts, err := c.GetAccounts(walletName)
 	if err != nil {
 		return nil, err
 	}

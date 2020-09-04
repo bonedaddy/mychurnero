@@ -75,7 +75,7 @@ func main() {
 				if err != nil {
 					return err
 				}
-				resp, err := cl.GetAllAccounts(c.String("wallet.name"))
+				resp, err := cl.GetAccounts(c.String("wallet.name"))
 				if err != nil {
 					return err
 				}

@@ -2,20 +2,21 @@ package client
 
 import "github.com/monero-ecosystem/go-monero-rpc-client/wallet"
 
-func (c *Client) CreateWallet(account_name string) error {
+// CreateWallet is used to create a new monero wallet
+func (c *Client) CreateWallet(walletName string) error {
 	c.mux.Lock()
 	defer c.mux.Unlock()
 	return c.mw.CreateWallet(&wallet.RequestCreateWallet{
-		Filename: account_name,
+		Filename: walletName,
 		Language: "English",
 	})
 }
 
-// look up balance for all address in wallet
-func (c *Client) WalletBalance(wallet_name string) (uint64, error) {
+// WalletBalance returns the entire unlocked balance of all accounts and subaddresses
+func (c *Client) WalletBalance(walletName string) (uint64, error) {
 	c.mux.Lock()
 	defer c.mux.Unlock()
-	if err := c.OpenWallet(wallet_name); err != nil {
+	if err := c.OpenWallet(walletName); err != nil {
 		return 0, err
 	}
 	resp, err := c.mw.GetBalance(&wallet.RequestGetBalance{AccountIndex: 0})
@@ -25,10 +26,12 @@ func (c *Client) WalletBalance(wallet_name string) (uint64, error) {
 	return resp.UnlockedBalance, nil
 }
 
-func (c *Client) OpenWallet(name string) error {
-	return c.mw.OpenWallet(&wallet.RequestOpenWallet{Filename: name})
+// OpenWallet is used to open the given wallet using it for all subsequent RPC requests
+func (c *Client) OpenWallet(walletName string) error {
+	return c.mw.OpenWallet(&wallet.RequestOpenWallet{Filename: walletName})
 }
 
+// SaveWallet stores the state of the current actively opened wallet
 func (c *Client) SaveWallet() error {
 	c.mux.Lock()
 	defer c.mux.Unlock()
