@@ -61,6 +61,19 @@ func (c *Client) Transfer(opts TransferOpts) (*wallet.ResponseTransfer, error) {
 	return resp, nil
 }
 
+// Relay is used to relay an unbroadcasted transaction returning the tx hash
+func (c *Client) Relay(walletName, txMetadata string) (string, error) {
+	if err := c.OpenWallet(walletName); err != nil {
+		return "", err
+	}
+
+	resp, err := c.mw.RelayTx(&wallet.RequestRelayTx{Hex: txMetadata})
+	if err != nil {
+		return "", err
+	}
+	return resp.TxHash, nil
+}
+
 // RandomPriority returns a random transaction priority
 // note that this can potentially become expensive
 func RandomPriority() wallet.Priority {
