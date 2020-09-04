@@ -73,7 +73,10 @@ func (s *Service) Start() {
 		// call the ticker functions manually first
 		// since if we dont do this this we have to wait
 		// full ticker time until we can
+		log.Println("getting churnable addresses")
 		s.handleGetChurnTick()
+		log.Println("scheduling transactions")
+		s.createTransactions()
 
 		getChurnTicker := time.NewTicker(time.Minute * 20)
 		defer getChurnTicker.Stop()
