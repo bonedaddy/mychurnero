@@ -14,6 +14,12 @@ In the future we will use a sqlite database to cache this information so each ti
 
 to prevent churning to frequently, the default setting is to churn within 1hr -> 24hrs after an address last received a transaction. the end goal is that no two churn transactions will be broadcast at the same time, and the tx fee, as well as amounts ent will be varied. for now we will take a pretty naive approach of queueing all churn transactions within the predefined bounds, using the same transaction fee, and the amount that is unlocked for a given address whenever a churn is started.
 
+# churning process
+
+Before churning you create an account within a wallet specifically for receiving churned funds. All subaddresses created under this account will never be churned from only churned to, that is we will never send transactions containing funds from that account only send funds to it. Make note of the account index.
+
+Every 20 minutes we scan the wallet, ignoring the churn account, and see if any funds are unlocked. Any accounts who have unlocked funds above the minimum requirement will have a transaction scheduled that will spend all available unlocked funds. This transaction will be broadcast within a predefined window, randomly scheduled between the lower and upper bounds.
+
 # links
 
 * https://www.reddit.com/r/Monero/comments/egxulr/we_need_better_ways_to_combine_multiple_outputs/fcbakt6/
