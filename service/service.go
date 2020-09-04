@@ -11,7 +11,6 @@ import (
 
 	"github.com/bonedaddy/mychurnero/client"
 	"github.com/bonedaddy/mychurnero/db"
-	"github.com/bonedaddy/mychurnero/txscheduler"
 	"go.uber.org/multierr"
 )
 
@@ -26,7 +25,6 @@ var (
 // Service provides monero churning service that takes care of automatically scanning the wallet
 // determining which addresses need to be churned, and scheduling the sending of those addresses
 type Service struct {
-	s          *txscheduler.TxScheduler
 	mc         *client.Client
 	db         *db.Client
 	ctx        context.Context
@@ -57,9 +55,7 @@ func New(ctx context.Context, churnAccountIndex uint64, dbPath, walletName, rpcA
 		return nil, err
 	}
 	db.Setup()
-	sched := txscheduler.New(ctx)
-	sched.Start()
-	return &Service{sched, cl, db, ctx, cancel, walletName, churnAccountIndex}, nil
+	return &Service{cl, db, ctx, cancel, walletName, churnAccountIndex}, nil
 }
 
 // MC returns the underlying monero-wallet-rpc client
@@ -117,7 +113,6 @@ func (s *Service) Start() {
 // Close is used to close the churning service
 func (s *Service) Close() error {
 	var closeErr error
-	s.s.Stop()
 	s.cancel()
 	if err := s.mc.Close(); err != nil {
 		closeErr = err
