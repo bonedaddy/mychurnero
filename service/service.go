@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
@@ -67,42 +66,23 @@ func (s *Service) Context() context.Context {
 // Start is used to start the churning service
 func (s *Service) Start() {
 	go func() {
-		// first time wiat one minute
-		ticker := time.NewTicker(time.Minute * 1)
-		defer ticker.Stop()
+		// call the ticker functions manually first
+		// since if we dont do this this we have to wait
+		// full ticker time until we can
+		s.handleGetChurnTick()
+
+		getChurnTicker := time.NewTicker(time.Minute * 20)
+		defer getChurnTicker.Stop()
+
 		for {
 			select {
-			case <-ticker.C:
-				addrs, err := s.mc.GetChurnableAddresses(s.walletName)
-				if err != nil {
-					return
-				}
-				for _, acct := range addrs.Accounts {
-					for _, sub := range acct.Subaddresses {
-						addr := sub.Address
-						addrIndex := sub.AddressIndex
-						address := &db.Address{
-							WalletName:   s.walletName,
-							AccountIndex: uint(acct.AccountIndex),
-							AddressIndex: uint(addrIndex),
-							BaseAddress:  acct.BaseAddress,
-							Address:      addr,
-						}
-						// todo: get amount
-						fmt.Printf("got churnable address\n%#v\n\n", address)
-						if err := s.db.AddAddress(s.walletName, addr, acct.BaseAddress, acct.AccountIndex, addrIndex, 0); err != nil {
-							log.Println("failed to add address")
-							log.Fatal(err)
-						}
-					}
-				}
-				ticker.Stop()
-				// now create new ticker with 20 min wait
-				ticker = time.NewTicker(time.Minute * 20)
+			case <-getChurnTicker.C:
+				s.handleGetChurnTick()
 			case <-s.ctx.Done():
 				return
 			}
 		}
+
 	}()
 }
 
@@ -118,4 +98,30 @@ func (s *Service) Close() error {
 		closeErr = multierr.Combine(closeErr, err)
 	}
 	return closeErr
+}
+
+func (s *Service) handleGetChurnTick() {
+	addrs, err := s.mc.GetChurnableAddresses(s.walletName)
+	if err != nil {
+		return
+	}
+	for _, acct := range addrs.Accounts {
+		for _, sub := range acct.Subaddresses {
+			bal, err := s.MC().AddressBalance(s.walletName, sub.Address)
+			if err != nil {
+				log.Println("failed to get balance")
+				log.Fatal(err)
+			}
+			if err := s.db.AddAddress(
+				s.walletName,
+				sub.Address,
+				acct.BaseAddress,
+				acct.AccountIndex,
+				sub.AddressIndex,
+				bal); err != nil {
+				log.Println("failed to add address")
+				log.Fatal(err)
+			}
+		}
+	}
 }
