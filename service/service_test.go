@@ -17,7 +17,7 @@ func TestService(t *testing.T) {
 	t.Cleanup(func() {
 		os.RemoveAll("test_path")
 	})
-	srv, err := New(context.Background(), "test_path", testNetWallet, testNetRPC)
+	srv, err := New(context.Background(), 1, "test_path", testNetWallet, testNetRPC)
 	require.NoError(t, err)
 	srv.MC()
 	srv.DB()

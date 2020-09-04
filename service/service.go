@@ -20,10 +20,12 @@ type Service struct {
 	ctx        context.Context
 	cancel     context.CancelFunc
 	walletName string
+	// the account to use for receiving churned funds
+	churnAccountIndex uint64
 }
 
 // New returns a new Service starting all needed internal subprocesses
-func New(ctx context.Context, dbPath, walletName, rpcAddr string) (*Service, error) {
+func New(ctx context.Context, churnAccountIndex uint64, dbPath, walletName, rpcAddr string) (*Service, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	cl, err := client.NewClient(rpcAddr)
 	if err != nil {
@@ -45,7 +47,7 @@ func New(ctx context.Context, dbPath, walletName, rpcAddr string) (*Service, err
 	db.Setup()
 	sched := txscheduler.New(ctx)
 	sched.Start()
-	return &Service{sched, cl, db, ctx, cancel, walletName}, nil
+	return &Service{sched, cl, db, ctx, cancel, walletName, churnAccountIndex}, nil
 }
 
 // MC returns the underlying monero-wallet-rpc client
@@ -101,7 +103,7 @@ func (s *Service) Close() error {
 }
 
 func (s *Service) handleGetChurnTick() {
-	addrs, err := s.mc.GetChurnableAddresses(s.walletName)
+	addrs, err := s.mc.GetChurnableAddresses(s.walletName, s.churnAccountIndex)
 	if err != nil {
 		return
 	}
