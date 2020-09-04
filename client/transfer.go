@@ -29,6 +29,21 @@ type TransferOpts struct {
 	DoNotRelay     bool
 }
 
+// TxConfirmed returns whether or not the given transaction is confirmed
+func (c *Client) TxConfirmed(walletName, txHash string) (bool, error) {
+	if err := c.OpenWallet(walletName); err != nil {
+		return false, err
+	}
+	resp, err := c.mw.GetTransferByTxID(&wallet.RequestGetTransferByTxID{})
+	if err != nil {
+		return false, err
+	}
+	if resp.Transfer.Confirmations >= resp.Transfer.SuggestedConfirmationsThreshold {
+		return true, nil
+	}
+	return false, nil
+}
+
 // Transfer is used to transfer funds from the given wallet to the destination address
 func (c *Client) Transfer(opts TransferOpts) (*wallet.ResponseTransfer, error) {
 	if err := c.OpenWallet(opts.WalletName); err != nil {
