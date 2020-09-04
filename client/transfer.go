@@ -35,7 +35,7 @@ func (c *Client) Transfer(opts TransferOpts) error {
 		return err
 	}
 
-	var destinations = make([]*wallet.Destination, len(opts.Destinations))
+	var destinations []*wallet.Destination
 
 	for k, v := range opts.Destinations {
 		destinations = append(destinations, &wallet.Destination{
@@ -43,6 +43,7 @@ func (c *Client) Transfer(opts TransferOpts) error {
 			Amount:  v,
 		})
 	}
+
 	resp, err := c.mw.Transfer(&wallet.RequestTransfer{
 		Mixing:       10,
 		RingSize:     11,
