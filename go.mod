@@ -13,7 +13,7 @@ require (
 	github.com/urfave/cli/v2 v2.2.0
 	go.uber.org/multierr v1.5.0
 	gorm.io/driver/sqlite v1.1.1
-	gorm.io/gorm v1.20.0
+	gorm.io/gorm v1.20.1-0.20200904063544-f1216222284f
 )
 
 replace github.com/monero-ecosystem/go-monero-rpc-client v0.0.0-20200124164006-0afb4abdfc3c => github.com/bonedaddy/go-monero-rpc-client v0.0.0-20200904065722-23238e3895c4
