@@ -94,14 +94,17 @@ func TestTransaction(t *testing.T) {
 		spent    uint
 	}
 	tests := []struct {
-		name        string
-		args        args
-		wantErr     bool // not yet used but left for future use
-		wantTxCount int
+		name         string
+		args         args
+		wantErr      bool // not yet used but left for future use
+		wantTxCount  int
+		wantSendable int
 	}{
-		{"1", args{"1", "1", time.Now().AddDate(0, 0, -1), 1}, false, 1},
-		{"2", args{"2", "2", time.Now().Add(time.Hour), 0}, false, 2},
-		{"3", args{"3", "3", time.Now().Add(time.Hour * 10), 0}, false, 3},
+		{"1", args{"1", "1", time.Now().AddDate(0, 0, -1), 0}, false, 1, 1},
+		{"2", args{"2", "2", time.Now().Add(time.Hour), 1}, false, 2, 1},
+		{"3", args{"3", "3", time.Now().Add(time.Hour * 10), 1}, false, 3, 1},
+		{"4", args{"4", "4", time.Now().AddDate(0, 0, -2), 0}, false, 4, 2},
+		{"5", args{"5", "5", time.Now().AddDate(0, 0, -3), 0}, false, 5, 3},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -109,15 +112,24 @@ func TestTransaction(t *testing.T) {
 			err := db.AddTransaction(tt.args.sender, tt.args.metadata, tt.args.sendTime)
 			require.NoError(t, err)
 
+			err = db.SetTxSpent(tt.args.sender, tt.args.spent)
+			require.NoError(t, err)
+
 			tx, err := db.GetTransaction(tt.args.sender)
 			require.NoError(t, err)
 			require.Equal(t, tx.TxMetadata, tt.args.metadata)
-			require.Equal(t, int(tx.Spent), 0)
+			require.Equal(t, int(tx.Spent), int(tt.args.spent))
 			require.True(t, tx.SendTime.Equal(tt.args.sendTime))
 
 			txs, err := db.GetTransactions()
 			require.NoError(t, err)
 			require.Len(t, txs, tt.wantTxCount)
+
+			sendable, err := db.GetSendableTransactions()
+			if tt.wantSendable > 0 { // otherwise for no found txs this will be an error
+				require.NoError(t, err)
+			}
+			require.Len(t, sendable, tt.wantSendable)
 		})
 	}
 }

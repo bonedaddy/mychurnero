@@ -92,6 +92,15 @@ func (c *Client) AddTransaction(sourceAddress, txMetadata string, sendTime time.
 	}).Error
 }
 
+// SetTxSpent sets the spent field on a transfer entry
+func (c *Client) SetTxSpent(sourceAddress string, spent uint) error {
+	tx, err := c.GetTransaction(sourceAddress)
+	if err != nil {
+		return err
+	}
+	return c.db.Model(tx).Update("spent", spent).Error
+}
+
 // GetTransaction returns the first matching transaction
 func (c *Client) GetTransaction(sourceAddress string) (*Transfer, error) {
 	var tx Transfer
@@ -102,4 +111,10 @@ func (c *Client) GetTransaction(sourceAddress string) (*Transfer, error) {
 func (c *Client) GetTransactions() ([]Transfer, error) {
 	var txs []Transfer
 	return txs, c.db.Model(&Transfer{}).Find(&txs).Error
+}
+
+// GetSendableTransactions returns all transactions we can relay
+func (c *Client) GetSendableTransactions() ([]Transfer, error) {
+	var txs []Transfer
+	return txs, c.db.Model(&Transfer{}).Where("send_time < ? AND spent = 0", time.Now()).Find(&txs).Error
 }
