@@ -57,5 +57,5 @@ func TestClient(t *testing.T) {
 		SubaddrIndices: nil,
 	})
 	require.NoError(t, err)
-	fmt.Printf("%#v\n", txResp)
+	t.Logf("%#v\n", txResp)
 }
