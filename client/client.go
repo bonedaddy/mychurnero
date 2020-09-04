@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"log"
 	"sync"
 
@@ -64,33 +63,4 @@ func (c *Client) AddressBalance(walletName string, address string) (uint64, erro
 		}
 	}
 	return 0, nil
-}
-
-// Transfer is used to transfer funds from the given wallet to the destination address
-// TODO(bonedaddy): filter by source address
-func (c *Client) Transfer(walletName string, destAddress string, amount uint64) error {
-	c.mux.Lock()
-	defer c.mux.Unlock()
-	if err := c.OpenWallet(walletName); err != nil {
-		return err
-	}
-	resp, err := c.mw.Transfer(&wallet.RequestTransfer{
-		Mixing:       10,
-		RingSize:     11,
-		Priority:     wallet.PriorityDefault,
-		GetTxHex:     true,
-		GetTxKey:     true,
-		AccountIndex: 0,
-		Destinations: []*wallet.Destination{
-			{
-				Address: destAddress,
-				Amount:  amount,
-			},
-		},
-	})
-	if err != nil {
-		return err
-	}
-	fmt.Printf("%#v\n", resp)
-	return nil
 }

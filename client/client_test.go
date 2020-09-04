@@ -49,7 +49,11 @@ func TestClient(t *testing.T) {
 	resp, err := client.SweepDust(testNetWallet)
 	require.NoError(t, err)
 	fmt.Printf("%#v\n", resp)
-
-	err = client.Transfer(testNetWallet, addr, wallet.Float64ToXMR(0.1))
+	err = client.Transfer(TransferOpts{
+		WalletName:   testNetWallet,
+		Destinations: map[string]uint64{addr: wallet.Float64ToXMR(0.1)},
+		Priority:     wallet.PriorityDefault,
+		AccountIndex: 0,
+	})
 	require.NoError(t, err)
 }
