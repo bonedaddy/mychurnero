@@ -1,6 +1,10 @@
 package db
 
-import "github.com/jinzhu/gorm"
+import (
+	"time"
+
+	"github.com/jinzhu/gorm"
+)
 
 // Address specifies an address, its balance and the wallet it came from
 type Address struct {
@@ -16,7 +20,7 @@ type Address struct {
 // Transfer is a single transfer to churn an address
 type Transfer struct {
 	gorm.Model
-	SourceAddress      string
-	DestinationAddress string
-	TxHash             string
+	TxMetadata string    // the transaction metadata we use to relay
+	SendTime   time.Time // the time at which we will relay the transaction
+	Spent      uint      // indicates if the tx is spent (ie broadcasted), 0 = false 1 = true
 }
