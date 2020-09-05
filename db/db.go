@@ -13,16 +13,17 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+// Client provides a wrapper around the gorm client connecting to a sqlite3 database
 type Client struct {
 	db *gorm.DB
 	l  *zap.Logger
 }
 
 // NewClient returns a new database clients
-func NewClient(l *zap.Logger, db_path string) (*Client, error) {
+func NewClient(l *zap.Logger, dbPath string) (*Client, error) {
 	db, err := gorm.Open(sqlite.Open(fmt.Sprintf(
 		"file:%s?secure_delete=true&cache=shared",
-		db_path,
+		dbPath,
 	)), &gorm.Config{
 		Logger: logger.New(
 			log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
