@@ -2,3 +2,7 @@
 mychurnero
 
 mychurnerno_db
+
+*.log
+
+*.db

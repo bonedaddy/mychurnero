@@ -15,6 +15,7 @@ type Config struct {
 	WalletName string
 	// the address of a monero-wallet-rpc node
 	RPCAddress string
+	LogPath    string
 	// specifies the account index to use for receiving churned funds to
 	ChurnAccountIndex uint64
 	// specifies the minimum delay in minutes to use
@@ -29,6 +30,7 @@ func DefaultConfig() *Config {
 		DBPath:            "mychurnero.db",
 		WalletName:        "testnetwallet123",
 		RPCAddress:        "http://127.0.0.1:6061/json_rpc",
+		LogPath:           "mychurnero.log",
 		ChurnAccountIndex: 1,
 		MinDelayMinutes:   1,
 		MaxDelayMinutes:   10,

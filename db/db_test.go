@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zaptest"
 )
 
 var (
@@ -16,7 +17,7 @@ var (
 )
 
 func TestAddress(t *testing.T) {
-	db, err := NewClient(dbPath)
+	db, err := NewClient(zaptest.NewLogger(t), dbPath)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -100,7 +101,7 @@ func TestAddress(t *testing.T) {
 }
 
 func TestTransaction(t *testing.T) {
-	db, err := NewClient(dbPath)
+	db, err := NewClient(zaptest.NewLogger(t), dbPath)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

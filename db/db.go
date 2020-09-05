@@ -6,16 +6,18 @@ import (
 	"log"
 	"time"
 
+	"go.uber.org/zap"
 	"gorm.io/driver/sqlite" //include SQLite driver
 	"gorm.io/gorm"
 )
 
 type Client struct {
 	db *gorm.DB
+	l  *zap.Logger
 }
 
 // NewClient returns a new database clients
-func NewClient(db_path string) (*Client, error) {
+func NewClient(l *zap.Logger, db_path string) (*Client, error) {
 	db, err := gorm.Open(sqlite.Open(fmt.Sprintf(
 		"file:%s?secure_delete=true&cache=shared",
 		db_path,
@@ -23,7 +25,7 @@ func NewClient(db_path string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{db: db}, nil
+	return &Client{l: l.Named("database"), db: db}, nil
 }
 
 // Close is used to shutdown the database
@@ -52,7 +54,7 @@ func (c *Client) AddAddress(walletName, address, baseAddress string, accountInde
 	if addr, err := c.GetAddress(address); err == nil {
 		// if address has scheduled transaction skip it
 		if addr.Scheduled == 1 {
-			log.Printf("address %s has already scheduled transaction\n", address)
+			c.l.Warn("address already has scheduled transaction, try again later", zap.String("address", address))
 			return nil
 		}
 		return c.db.Model(addr).Update("balance", balance).Error
