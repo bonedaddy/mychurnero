@@ -4,11 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"go.uber.org/zap"
 	"gorm.io/driver/sqlite" //include SQLite driver
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type Client struct {
@@ -21,7 +23,16 @@ func NewClient(l *zap.Logger, db_path string) (*Client, error) {
 	db, err := gorm.Open(sqlite.Open(fmt.Sprintf(
 		"file:%s?secure_delete=true&cache=shared",
 		db_path,
-	)), &gorm.Config{})
+	)), &gorm.Config{
+		Logger: logger.New(
+			log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+			logger.Config{
+				SlowThreshold: time.Second,   // Slow SQL threshold
+				LogLevel:      logger.Silent, // Log level
+				Colorful:      false,         // Disable color
+			},
+		),
+	})
 	if err != nil {
 		return nil, err
 	}
