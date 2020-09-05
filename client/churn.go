@@ -51,7 +51,7 @@ func (c *Client) GetChurnableAddresses(walletName string, churnAccountIndex, min
 		}
 		for _, addr := range addrs.Addresses {
 			if addr.Used {
-				bal, err := c.AddressBalance(walletName, addr.Address)
+				bal, err := c.AddressBalance(walletName, addr.Address, acct.AccountIndex, addr.AddressIndex)
 				if err != nil {
 					return nil, err
 				}

@@ -40,11 +40,11 @@ func (c *Client) Refresh(walletName string) error {
 // AddressBalance returns the unlocked funds for the given address
 // TODO(bonedaddy): accept account and subaddress index
 // look up balance for the given address (not the wallet)
-func (c *Client) AddressBalance(walletName string, address string) (uint64, error) {
+func (c *Client) AddressBalance(walletName string, address string, accountIndex uint64, addressIndex uint64) (uint64, error) {
 	if err := c.OpenWallet(walletName); err != nil {
 		return 0, err
 	}
-	resp, err := c.mw.GetBalance(&wallet.RequestGetBalance{AccountIndex: 0})
+	resp, err := c.mw.GetBalance(&wallet.RequestGetBalance{AccountIndex: accountIndex, AddressIndices: []uint64{addressIndex}})
 	if err != nil {
 		return 0, err
 	}
