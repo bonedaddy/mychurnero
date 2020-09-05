@@ -27,6 +27,13 @@ func (c *Client) Close() error {
 	return c.mw.CloseWallet()
 }
 
+func (c *Client) Rescan(walletName string) error {
+	if err := c.OpenWallet(walletName); err != nil {
+		return err
+	}
+	return c.mw.RescanBlockchain()
+}
+
 // Refresh triggles a total refresh of a wallet scanning
 // all addresses for incoming transactions
 func (c *Client) Refresh(walletName string) error {
@@ -35,23 +42,4 @@ func (c *Client) Refresh(walletName string) error {
 	}
 	_, err := c.mw.Refresh(&wallet.RequestRefresh{})
 	return err
-}
-
-// AddressBalance returns the unlocked funds for the given address
-// TODO(bonedaddy): accept account and subaddress index
-// look up balance for the given address (not the wallet)
-func (c *Client) AddressBalance(walletName string, address string, accountIndex uint64, addressIndex uint64) (uint64, error) {
-	if err := c.OpenWallet(walletName); err != nil {
-		return 0, err
-	}
-	resp, err := c.mw.GetBalance(&wallet.RequestGetBalance{AccountIndex: accountIndex, AddressIndices: []uint64{addressIndex}})
-	if err != nil {
-		return 0, err
-	}
-	for _, addr := range resp.PerSubaddress {
-		if addr.Address == address {
-			return addr.UnlockedBalance, nil
-		}
-	}
-	return 0, nil
 }
