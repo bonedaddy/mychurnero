@@ -28,6 +28,8 @@ type Service struct {
 
 // New returns a new Service starting all needed internal subprocesses
 func New(ctx context.Context, cfg *config.Config) (*Service, error) {
+	// seed random number generation
+	rand.Seed(time.Now().UnixNano())
 
 	l, err := zapx.New(cfg.LogPath, true)
 	if err != nil {
@@ -215,17 +217,38 @@ func (s *Service) createTransactions() {
 			continue
 		}
 
-		priority := client.RandomPriority()
+		sendAmt := s.getRandomBalance(uint64(addr.Balance))
 		resp, err := s.mc.Transfer(client.TransferOpts{
-			Priority:       priority,
-			Destinations:   map[string]uint64{churnToAddr: uint64(addr.Balance)},
+			Priority:       client.RandomPriority(),
+			Destinations:   map[string]uint64{churnToAddr: sendAmt},
 			AccountIndex:   uint64(addr.AccountIndex),
 			SubaddrIndices: []uint64{uint64(addr.AddressIndex)},
 			WalletName:     s.cfg.WalletName,
 			DoNotRelay:     true,
 		})
 		if err != nil {
-			s.l.Error("failed to create transfer", zap.Error(err))
+			origErr := err.Error()
+			haveBal, err := s.mc.AddressBalance(
+				s.cfg.WalletName,
+				addr.Address,
+				uint64(addr.AccountIndex),
+				uint64(addr.AddressIndex),
+			)
+			if err != nil {
+				s.l.Error(
+					"failed to lookup address balance",
+					zap.Error(err),
+					zap.String("address", addr.Address),
+				)
+				continue
+			}
+			s.l.Error(
+				"failed to create transfer",
+				zap.String("error", origErr),
+				zap.String("address", addr.Address),
+				zap.Uint64("balance.have", haveBal),
+				zap.Uint64("balance.want", sendAmt),
+			)
 			continue
 		}
 
@@ -306,4 +329,16 @@ func (s *Service) getRandomSendDelay() time.Duration {
 	random := rand.Int63n(s.cfg.MaxDelayMinutes-s.cfg.MinDelayMinutes+1) + s.cfg.MinDelayMinutes
 	dur := time.Duration(random) * time.Minute
 	return dur
+}
+
+// returns random balance to send
+func (s *Service) getRandomBalance(currentBalance uint64) uint64 {
+	if currentBalance < s.cfg.MinChurnAmount {
+		return 0
+	} else if currentBalance == s.cfg.MinChurnAmount {
+		return currentBalance
+	}
+	return uint64(rand.Int63n(
+		int64(currentBalance)-int64(s.cfg.MinChurnAmount)+1,
+	) + int64(s.cfg.MinChurnAmount))
 }
