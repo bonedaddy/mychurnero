@@ -20,6 +20,15 @@ func main() {
 	app.Description = "mychurnero provides a service for automatically, and randomly churning monero accounts, as well as providing a framework for studying the effects of churning"
 	app.Commands = cli.Commands{
 		&cli.Command{
+			Name:    "convert-to-xmr",
+			Aliases: []string{"ctxm"},
+			Usage:   "converts an amount such as 0.1 to its corresponding XMR uint64 value",
+			Action: func(c *cli.Context) error {
+				fmt.Println(wallet.Float64ToXMR(c.Float64("value")))
+				return nil
+			},
+		},
+		&cli.Command{
 			Name:  "config-gen",
 			Usage: "generates mychurnero configuration file",
 			Action: func(c *cli.Context) error {
