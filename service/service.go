@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"log"
 	"math/rand"
 	"time"
 
@@ -262,7 +261,6 @@ func (s *Service) createTransactions() {
 			txHash, err := s.mc.Relay(s.walletName, txData.TxMetadata)
 			if err != nil {
 				s.l.Error("failed to relay transaction", zap.Error(err), zap.String("metadata.sha256", txMetaHash))
-				log.Println("failed to relay transaction: ", err)
 				return
 			}
 
@@ -281,23 +279,23 @@ func (s *Service) createTransactions() {
 func (s *Service) deleteSpentTransfers() {
 	txs, err := s.db.GetRelayedTransactions()
 	if err != nil {
-		log.Println("failed to get relayed transactions: ", err)
+		s.l.Error("failed to get relayed transactions from database", zap.Error(err))
 		return
 	}
 
 	for _, tx := range txs {
 		confirmed, err := s.mc.TxConfirmed(s.walletName, tx.TxHash)
 		if err != nil {
-			log.Println("failed to get tx confirmed status: ", err)
+			s.l.Error("failed to get tx confirmation status", zap.Error(err), zap.String("tx.hash", tx.TxHash))
 			continue
 		}
 
 		if confirmed {
 			if err := s.db.DeleteTransaction(tx.SourceAddress, tx.TxHash); err != nil {
-				log.Println("failed to delete transaction from database: ", err)
+				s.l.Error("failed to delete transaction from database", zap.Error(err), zap.String("tx.hash", tx.TxHash))
 				continue
 			}
-			log.Printf("successfully purged tx information\nhash: %s, sender: %s\n", tx.TxHash, tx.SourceAddress)
+			s.l.Error("transaction purged from database", zap.String("tx.hash", tx.TxHash))
 		}
 
 	}
