@@ -60,15 +60,16 @@ func (c *Client) Transfer(opts TransferOpts) (*wallet.ResponseTransfer, error) {
 	}
 
 	resp, err := c.mw.Transfer(&wallet.RequestTransfer{
-		Mixing:        10,
-		RingSize:      11,
-		Priority:      opts.Priority,
-		GetTxHex:      true,
-		GetTxKey:      true,
-		GetTxMetadata: true,
-		DoNotRelay:    opts.DoNotRelay,
-		AccountIndex:  opts.AccountIndex,
-		Destinations:  destinations,
+		Mixing:         10,
+		RingSize:       11,
+		Priority:       opts.Priority,
+		GetTxHex:       true,
+		GetTxKey:       true,
+		GetTxMetadata:  true,
+		DoNotRelay:     opts.DoNotRelay,
+		AccountIndex:   opts.AccountIndex,
+		SubaddrIndices: opts.SubaddrIndices,
+		Destinations:   destinations,
 	})
 	if err != nil {
 		return nil, err
