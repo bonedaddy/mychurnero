@@ -59,3 +59,4 @@ After all eligible transactions have been relayed, we then check previously rela
 * https://www.reddit.com/r/Monero/comments/ekz7wg/what_is_the_latest_consensus_on_minimum_amount_of/
 * https://www.reddit.com/r/Monero/comments/a6b3ea/whats_the_latest_consensus_on_minimum_amount_of/
 * https://www.reddit.com/r/Monero/comments/70zalp/clarification_on_mrls_churning_comments/dn7a7wa/
+* https://monero.stackexchange.com/questions/7460/cant-transfer-monero-coins-strange-error-message-error-not-enough-outputs-fo
