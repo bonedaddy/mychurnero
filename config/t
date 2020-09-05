@@ -1,6 +1,0 @@
-dbpath: mychurnero.db
-walletname: testnetwallet123
-rpcaddress: http://127.0.0.1:6061/json_rpc
-churnaccountindex: 1
-mindelay: 1m0s
-maxdelay: 10m0s

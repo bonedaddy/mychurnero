@@ -10,16 +10,9 @@ import (
 	"time"
 
 	"github.com/bonedaddy/mychurnero/client"
+	"github.com/bonedaddy/mychurnero/config"
 	"github.com/bonedaddy/mychurnero/db"
 	"go.uber.org/multierr"
-)
-
-// TODO(bonedaddy): move these to configuration arguments in New call
-var (
-	min     int64 = 1
-	max     int64 = 10
-	minTime       = time.Minute
-	maxTime       = time.Minute * 10
 )
 
 // Service provides monero churning service that takes care of automatically scanning the wallet
@@ -32,30 +25,32 @@ type Service struct {
 	walletName string
 	// the account to use for receiving churned funds
 	churnAccountIndex uint64
+	min               int64
+	max               int64
 }
 
 // New returns a new Service starting all needed internal subprocesses
-func New(ctx context.Context, churnAccountIndex uint64, dbPath, walletName, rpcAddr string) (*Service, error) {
+func New(ctx context.Context, cfg *config.Config) (*Service, error) {
 	ctx, cancel := context.WithCancel(ctx)
-	cl, err := client.NewClient(rpcAddr)
+	cl, err := client.NewClient(cfg.RPCAddress)
 	if err != nil {
 		cancel()
 		return nil, err
 	}
 	// open the wallet
-	if err := cl.OpenWallet(walletName); err != nil {
+	if err := cl.OpenWallet(cfg.WalletName); err != nil {
 		cancel()
 		cl.Close()
 		return nil, err
 	}
-	db, err := db.NewClient(dbPath)
+	db, err := db.NewClient(cfg.DBPath)
 	if err != nil {
 		cancel()
 		cl.Close()
 		return nil, err
 	}
 	db.Setup()
-	return &Service{cl, db, ctx, cancel, walletName, churnAccountIndex}, nil
+	return &Service{cl, db, ctx, cancel, cfg.WalletName, cfg.ChurnAccountIndex, cfg.MinDelayMinutes, cfg.MaxDelayMinutes}, nil
 }
 
 // MC returns the underlying monero-wallet-rpc client
@@ -260,11 +255,7 @@ func (s *Service) hashMetadata(txMetadata string) string {
 }
 
 func (s *Service) getRandomSendDelay() time.Duration {
-	random := rand.Int63n(max)
-	if random == 0 { // if 0 increase by 1
-		random = random + 1
-	}
-	// TODO(bonedaddy): handle values other than minute
+	random := rand.Int63n(s.max-s.min+1) + s.min
 	dur := time.Duration(random) * time.Minute
 	log.Printf("using delay of %v minutes\n", dur.Minutes())
 	return dur

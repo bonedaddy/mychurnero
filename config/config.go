@@ -3,7 +3,6 @@ package config
 import (
 	"io/ioutil"
 	"os"
-	"time"
 
 	"gopkg.in/yaml.v2"
 )
@@ -18,10 +17,10 @@ type Config struct {
 	RPCAddress string
 	// specifies the account index to use for receiving churned funds to
 	ChurnAccountIndex uint64
-	// specifies the minimum delay to use for relaying a transaction after it is created
-	MinDelay time.Duration
-	// specifies the maximum delay to use for relaying a transaction after it is created
-	MaxDelay time.Duration
+	// specifies the minimum delay in minutes to use
+	MinDelayMinutes int64
+	// specifies the maximum delay in minutes to use for relaying a transaction after it is created
+	MaxDelayMinutes int64
 }
 
 // DefaultConfig returns a default configuration suitable for testing
@@ -31,8 +30,8 @@ func DefaultConfig() *Config {
 		WalletName:        "testnetwallet123",
 		RPCAddress:        "http://127.0.0.1:6061/json_rpc",
 		ChurnAccountIndex: 1,
-		MinDelay:          time.Minute,
-		MaxDelay:          time.Minute * 10,
+		MinDelayMinutes:   1,
+		MaxDelayMinutes:   10,
 	}
 }
 

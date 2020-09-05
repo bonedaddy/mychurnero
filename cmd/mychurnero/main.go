@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/bonedaddy/mychurnero/client"
+	"github.com/bonedaddy/mychurnero/config"
 	"github.com/bonedaddy/mychurnero/service"
 	"github.com/monero-ecosystem/go-monero-rpc-client/wallet"
 	"github.com/urfave/cli/v2"
@@ -22,7 +23,8 @@ func main() {
 			Name:  "service",
 			Usage: "start the churning service",
 			Action: func(c *cli.Context) error {
-				srv, err := service.New(context.Background(), c.Uint64("churn.index"), c.String("db.path"), c.String("wallet.name"), c.String("wallet.rpc_address"))
+				// TODO(bonedaddy): enable specifying file to use
+				srv, err := service.New(context.Background(), config.DefaultConfig())
 				if err != nil {
 					return err
 				}

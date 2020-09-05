@@ -3,7 +3,6 @@ package config
 import (
 	"os"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -19,8 +18,8 @@ func TestConfig(t *testing.T) {
 	require.Equal(t, cfg.WalletName, "testnetwallet123")
 	require.Equal(t, cfg.RPCAddress, "http://127.0.0.1:6061/json_rpc")
 	require.Equal(t, int(cfg.ChurnAccountIndex), 1)
-	require.Equal(t, cfg.MinDelay, time.Minute)
-	require.Equal(t, cfg.MaxDelay, time.Minute*10)
+	require.Equal(t, int(cfg.MinDelayMinutes), 1)
+	require.Equal(t, int(cfg.MaxDelayMinutes), 10)
 
 	require.NoError(t, Save(cfg, testPath))
 
@@ -30,7 +29,7 @@ func TestConfig(t *testing.T) {
 	require.Equal(t, cfg2.WalletName, "testnetwallet123")
 	require.Equal(t, cfg2.RPCAddress, "http://127.0.0.1:6061/json_rpc")
 	require.Equal(t, int(cfg2.ChurnAccountIndex), 1)
-	require.Equal(t, cfg2.MinDelay, time.Minute)
-	require.Equal(t, cfg2.MaxDelay, time.Minute*10)
+	require.Equal(t, int(cfg2.MinDelayMinutes), 1)
+	require.Equal(t, int(cfg2.MaxDelayMinutes), 10)
 
 }
