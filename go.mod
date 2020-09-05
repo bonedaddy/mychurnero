@@ -12,6 +12,7 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/urfave/cli/v2 v2.2.0
 	go.uber.org/multierr v1.5.0
+	gopkg.in/yaml.v2 v2.2.2
 	gorm.io/driver/sqlite v1.1.1
 	gorm.io/gorm v1.20.1-0.20200904063544-f1216222284f
 )
