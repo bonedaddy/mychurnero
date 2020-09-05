@@ -17,14 +17,24 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "mychurnero"
 	app.Usage = "automated churning application"
-	app.Description = "mychurnero is an automated churning application designed to reduce the overhead in churning and create a totally automatic solution. this application provides no guarantee in benefits, and should be used with caution, and with great care"
+	app.Description = "mychurnero provides a service for automatically, and randomly churning monero accounts, as well as providing a framework for studying the effects of churning"
 	app.Commands = cli.Commands{
 		&cli.Command{
-			Name:  "service",
-			Usage: "start the churning service",
+			Name:  "config-gen",
+			Usage: "generates mychurnero configuration file",
 			Action: func(c *cli.Context) error {
-				// TODO(bonedaddy): enable specifying file to use
-				srv, err := service.New(context.Background(), config.DefaultConfig())
+				return config.Save(config.DefaultConfig(), c.String("config"))
+			},
+		},
+		&cli.Command{
+			Name:  "service",
+			Usage: "start the mychurnero churning service",
+			Action: func(c *cli.Context) error {
+				cfg, err := config.Load(c.String("config"))
+				if err != nil {
+					return err
+				}
+				srv, err := service.New(context.Background(), cfg)
 				if err != nil {
 					return err
 				}
@@ -35,6 +45,7 @@ func main() {
 		},
 		&cli.Command{
 			Name:    "get-churnable-addresses",
+			Usage:   "returns all available churnable addresses",
 			Aliases: []string{"gca"},
 			Action: func(c *cli.Context) error {
 				cl, err := client.NewClient(c.String("wallet.rpc_address"))
@@ -51,7 +62,7 @@ func main() {
 		},
 		&cli.Command{
 			Name:  "get-address",
-			Usage: "useful for returning sub addresses for an account index",
+			Usage: "returns all subaddresses underneath a given account index",
 			Action: func(c *cli.Context) error {
 				cl, err := client.NewClient(c.String("wallet.rpc_address"))
 				if err != nil {
@@ -71,7 +82,7 @@ func main() {
 		},
 		&cli.Command{
 			Name:  "get-all-accounts",
-			Usage: "return all known accounts",
+			Usage: "return all known accounts, their indexes, and subaddresses",
 			Action: func(c *cli.Context) error {
 				cl, err := client.NewClient(c.String("wallet.rpc_address"))
 				if err != nil {
@@ -92,7 +103,7 @@ func main() {
 		},
 		&cli.Command{
 			Name:  "transfer",
-			Usage: "transfer funds to address",
+			Usage: "used to transfer funds to the given address",
 			Action: func(c *cli.Context) error {
 				cl, err := client.NewClient(c.String("wallet.rpc_address"))
 				if err != nil {
@@ -106,13 +117,13 @@ func main() {
 				if err != nil {
 					return err
 				}
-				fmt.Printf("%#v\n", resp)
+				fmt.Println("tx hash: ", resp.TxHash)
 				return cl.Close()
 			},
 		},
 		&cli.Command{
 			Name:  "refresh",
-			Usage: "refresh accounts",
+			Usage: "refresh accounts, scanning for incoming transactions",
 			Action: func(c *cli.Context) error {
 				cl, err := client.NewClient(c.String("wallet.rpc_address"))
 				if err != nil {
@@ -126,7 +137,7 @@ func main() {
 		},
 		&cli.Command{
 			Name:  "sweep-all",
-			Usage: "sweep all accounts",
+			Usage: "sweep all accounts, use with caution",
 			Action: func(c *cli.Context) error {
 				cl, err := client.NewClient(c.String("wallet.rpc_address"))
 				if err != nil {
@@ -142,7 +153,7 @@ func main() {
 		},
 		&cli.Command{
 			Name:  "sweep-dust",
-			Usage: "sweeps all dust",
+			Usage: "sweeps all dust, use with caution",
 			Action: func(c *cli.Context) error {
 				cl, err := client.NewClient(c.String("wallet.rpc_address"))
 				if err != nil {
@@ -162,7 +173,7 @@ func main() {
 			Subcommands: cli.Commands{
 				&cli.Command{
 					Name:  "start",
-					Usage: "start mining",
+					Usage: "start mining depositing funds into the given wallet",
 					Action: func(c *cli.Context) error {
 						cl, err := client.NewClient(c.String("wallet.rpc_address"))
 						if err != nil {
@@ -221,6 +232,11 @@ func main() {
 			Aliases: []string{"da"},
 			Usage:   "destination address to send funds to",
 			Value:   "BhJQR4hu54wAqx9iRZZv5Y1UcTV6qgH52ULy5UNpEn7B7HVT2jpmAttf1k7mARTVWASvZkvajTk2NT5c2x3JHmojB5BDrFV",
+		},
+		&cli.StringFlag{
+			Name:    "config",
+			Aliases: []string{"cfg"},
+			Value:   "mychurnero.yml",
 		},
 		&cli.Uint64Flag{
 			Name:    "account.index",
