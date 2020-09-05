@@ -50,6 +50,7 @@ func (c *Client) Setup() error {
 // AddAddress is used to store an address into the database, if a previous record with
 // this address exists it will be overwritten
 func (c *Client) AddAddress(walletName, address, baseAddress string, accountIndex, addressIndex, balance uint64) error {
+
 	// if this address already exists, update with latest balance as long as it is not scheduled
 	if addr, err := c.GetAddress(address); err == nil {
 		// if address has scheduled transaction skip it
@@ -59,6 +60,7 @@ func (c *Client) AddAddress(walletName, address, baseAddress string, accountInde
 		}
 		return c.db.Model(addr).Update("balance", balance).Error
 	}
+
 	return c.db.Create(&Address{
 		WalletName:   walletName,
 		AccountIndex: uint(accountIndex),
@@ -102,13 +104,16 @@ func (c *Client) GetAddresses() ([]Address, error) {
 func (c *Client) ScheduleTransaction(sourceAddress, txMetadata string, sendTime time.Time) error {
 	return c.db.Transaction(func(db *gorm.DB) error {
 		var addr Address
+
 		// make sure address exists
 		if err := db.Model(&Address{}).Where("address = ?", sourceAddress).First(&addr).Error; err != nil {
 			return err
 		}
+
 		if err := db.Model(addr).Update("scheduled", 1).Error; err != nil {
 			return err
 		}
+
 		return db.Create(&Transfer{
 			SourceAddress: sourceAddress,
 			TxMetadata:    txMetadata,
@@ -125,9 +130,11 @@ func (c *Client) DeleteTransaction(sourceAddress, txHash string) error {
 	if err != nil {
 		return err
 	}
+
 	if tx.TxHash != txHash {
 		return errors.New("invalid transaction found")
 	}
+
 	if err := c.db.Delete(tx).Error; err != nil {
 		return err
 	}
