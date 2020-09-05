@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/monero-ecosystem/go-monero-rpc-client/wallet"
 	"gopkg.in/yaml.v2"
 )
 
@@ -18,6 +19,8 @@ type Config struct {
 	LogPath    string
 	// specifies the account index to use for receiving churned funds to
 	ChurnAccountIndex uint64
+	// defines the minimum balance an address must have to be churned from
+	MinChurnAmount uint64
 	// specifies the minimum delay in minutes to use
 	MinDelayMinutes int64
 	// specifies the maximum delay in minutes to use for relaying a transaction after it is created
@@ -32,6 +35,7 @@ func DefaultConfig() *Config {
 		RPCAddress:        "http://127.0.0.1:6061/json_rpc",
 		LogPath:           "mychurnero.log",
 		ChurnAccountIndex: 1,
+		MinChurnAmount:    wallet.Float64ToXMR(0.1),
 		MinDelayMinutes:   1,
 		MaxDelayMinutes:   10,
 	}

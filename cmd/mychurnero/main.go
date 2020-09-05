@@ -52,7 +52,7 @@ func main() {
 				if err != nil {
 					return err
 				}
-				resp, err := cl.GetChurnableAddresses(c.String("wallet.name"), c.Uint64("churn.index"))
+				resp, err := cl.GetChurnableAddresses(c.String("wallet.name"), c.Uint64("churn.index"), c.Uint64("minimum.churn"))
 				if err != nil {
 					return err
 				}
@@ -243,6 +243,12 @@ func main() {
 			Aliases: []string{"ai"},
 			Usage:   "account index to use",
 			Value:   0,
+		},
+		&cli.Uint64Flag{
+			Name:    "minimum.churn",
+			Aliases: []string{"mc"},
+			Usage:   "minimum amount to churn from",
+			Value:   1,
 		},
 		&cli.Uint64Flag{
 			Name:  "churn.index",

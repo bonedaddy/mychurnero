@@ -25,6 +25,7 @@ type Service struct {
 	walletName string
 	// the account to use for receiving churned funds
 	churnAccountIndex uint64
+	minChurnAmount    uint64
 	min               int64
 	max               int64
 	l                 *zap.Logger
@@ -61,7 +62,7 @@ func New(ctx context.Context, cfg *config.Config) (*Service, error) {
 	}
 	db.Setup()
 
-	return &Service{cl, db, ctx, cancel, cfg.WalletName, cfg.ChurnAccountIndex, cfg.MinDelayMinutes, cfg.MaxDelayMinutes, l.Named("service")}, nil
+	return &Service{cl, db, ctx, cancel, cfg.WalletName, cfg.ChurnAccountIndex, cfg.MinChurnAmount, cfg.MinDelayMinutes, cfg.MaxDelayMinutes, l.Named("service")}, nil
 }
 
 // MC returns the underlying monero-wallet-rpc client
@@ -172,7 +173,7 @@ func (s *Service) getChurnToAddress() (string, error) {
 }
 
 func (s *Service) handleGetChurnTick() {
-	addrs, err := s.mc.GetChurnableAddresses(s.walletName, s.churnAccountIndex)
+	addrs, err := s.mc.GetChurnableAddresses(s.walletName, s.churnAccountIndex, s.minChurnAmount)
 	if err != nil {
 		return
 	}

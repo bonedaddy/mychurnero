@@ -22,7 +22,7 @@ type ChurnableAccounts struct {
 // GetChurnableAddresses is used to get addresses that we can churn by sending to ourselves.
 // The account index matching churnAccountIndex is skipped, as this is the account for which
 // we will use to send churned funds to
-func (c *Client) GetChurnableAddresses(walletName string, churnAccountIndex uint64) (*ChurnableAccounts, error) {
+func (c *Client) GetChurnableAddresses(walletName string, churnAccountIndex, minBalance uint64) (*ChurnableAccounts, error) {
 	if err := c.OpenWallet(walletName); err != nil {
 		return nil, err
 	}
@@ -55,8 +55,8 @@ func (c *Client) GetChurnableAddresses(walletName string, churnAccountIndex uint
 				if err != nil {
 					return nil, err
 				}
-				// skip addresses with no balance
-				if bal <= 0 {
+				// skip addresses with no balance or less than minimum balance
+				if bal < minBalance || bal <= 0 {
 					continue
 				}
 				// todo: get balance if it is 0 no point in using
