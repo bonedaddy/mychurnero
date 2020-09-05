@@ -4,6 +4,17 @@ mychurnero is a monero churning service that allows you to automatically, and ra
 
 Interested in supporting mychurnero? Send XMR to `87Gkfh2VPLjJQ1EYkSXzs6GBbY3Arwm1NJKpkyhQzbf7R8iu8VSnjFDC23vaUc5TFK7boZtPV2kXhSQYZenwtWTzPGdRBds`
 
+# warnings
+
+* loss of funds may occur from using this as it is experimental software
+* the method of churning hasn't been statistically analyzed to determine effectiveness, it works in theory but practice may be different
+* it is not safe to use a single mychurnero instance for multiple different wallets
+  * there are thread-safety concerns when handling multiple different wallets at the same time
+  * the database connection leverages a shared cache which if using multiple different wallets could potentially be a source of information leakage although this isn't serious
+* transaction fees are randomly determined and could be costly
+* this may or may not relay transactions through anonymized networks such as Tor or I2P however that will entirely depend on the monerod node your monero-wallet-rpc client talks to
+
+
 # what defines a churnable address
 
 a churnable address is defined as one that has previously been used to receive a transaction, and that has an unlocked balance greater than 0. right now we use a pretty naive method of retrieving this information which is essentially parsing over all available wallet and account information. This means if you have a wallet with multiple accounts and each account has multiple sub addresses it will take a lot longer to retrieve the churnable information than if you had one account with one subaddress.
