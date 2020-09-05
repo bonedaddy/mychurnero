@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/bonedaddy/mychurnero/client"
 	"github.com/bonedaddy/mychurnero/config"
@@ -70,6 +71,22 @@ func main() {
 			},
 		},
 		&cli.Command{
+			Name:  "address-balance",
+			Usage: "retrieve balance for an address",
+			Action: func(c *cli.Context) error {
+				cl, err := client.NewClient(c.String("wallet.rpc_address"))
+				if err != nil {
+					return err
+				}
+				bal, err := cl.AddressBalance(c.String("wallet.name"), c.String("address"), c.Uint64("account.index"))
+				if err != nil {
+					return err
+				}
+				fmt.Println("balance: ", bal)
+				return cl.Close()
+			},
+		},
+		&cli.Command{
 			Name:  "get-address",
 			Usage: "returns all subaddresses underneath a given account index",
 			Action: func(c *cli.Context) error {
@@ -118,15 +135,42 @@ func main() {
 				if err != nil {
 					return err
 				}
+				parts := c.StringSlice("subaddr.indices")
+				var indices []uint64
+				if len(parts) > 0 {
+					for _, part := range parts {
+						indice, err := strconv.ParseUint(part, 0, 64)
+						if err != nil {
+							continue // todo: handle
+						}
+						indices = append(indices, indice)
+					}
+				}
 				resp, err := cl.Transfer(client.TransferOpts{
-					WalletName:   c.String("wallet.name"),
-					Destinations: map[string]uint64{c.String("dest.address"): wallet.Float64ToXMR(c.Float64("value"))},
-					Priority:     client.RandomPriority(),
+					WalletName:     c.String("wallet.name"),
+					Destinations:   map[string]uint64{c.String("dest.address"): wallet.Float64ToXMR(c.Float64("value"))},
+					AccountIndex:   c.Uint64("account.index"),
+					SubaddrIndices: indices,
+					Priority:       client.RandomPriority(),
 				})
 				if err != nil {
 					return err
 				}
 				fmt.Println("tx hash: ", resp.TxHash)
+				return cl.Close()
+			},
+		},
+		&cli.Command{
+			Name:  "rescan",
+			Usage: "rescan entire blockchain, potentially destructive",
+			Action: func(c *cli.Context) error {
+				cl, err := client.NewClient(c.String("wallet.rpc_address"))
+				if err != nil {
+					return err
+				}
+				if err := cl.Rescan(c.String("wallet.name")); err != nil {
+					return err
+				}
 				return cl.Close()
 			},
 		},
@@ -152,7 +196,12 @@ func main() {
 				if err != nil {
 					return err
 				}
-				resp, err := cl.SweepAll(c.String("wallet.name"), c.String("dest.address"), c.Uint64("account.index"))
+				resp, err := cl.SweepAll(client.TransferOpts{
+					WalletName:   c.String("wallet.name"),
+					AccountIndex: c.Uint64("account.index"),
+					Destinations: map[string]uint64{c.String("dest.address"): wallet.Float64ToXMR(c.Float64("value"))},
+					Priority:     client.RandomPriority(),
+				})
 				if err != nil {
 					return err
 				}
@@ -243,6 +292,10 @@ func main() {
 			Value:   "BhJQR4hu54wAqx9iRZZv5Y1UcTV6qgH52ULy5UNpEn7B7HVT2jpmAttf1k7mARTVWASvZkvajTk2NT5c2x3JHmojB5BDrFV",
 		},
 		&cli.StringFlag{
+			Name:  "address",
+			Usage: "the address to lookup",
+		},
+		&cli.StringFlag{
 			Name:    "config",
 			Aliases: []string{"cfg"},
 			Value:   "mychurnero.yml",
@@ -263,6 +316,10 @@ func main() {
 			Name:  "churn.index",
 			Usage: "account index to use for churning to",
 			Value: 1,
+		},
+		&cli.StringSliceFlag{
+			Name:  "subaddr.indices",
+			Usage: "specify one or more subaddress indices to use",
 		},
 		&cli.Float64Flag{
 			Name:  "value",
