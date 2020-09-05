@@ -3,6 +3,7 @@ package config
 import (
 	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/monero-ecosystem/go-monero-rpc-client/wallet"
 	"gopkg.in/yaml.v2"
@@ -25,6 +26,8 @@ type Config struct {
 	MinDelayMinutes int64
 	// specifies the maximum delay in minutes to use for relaying a transaction after it is created
 	MaxDelayMinutes int64
+	// how often we will check for churnable addresses
+	ScanInterval time.Duration
 }
 
 // DefaultConfig returns a default configuration suitable for testing
@@ -38,6 +41,7 @@ func DefaultConfig() *Config {
 		MinChurnAmount:    wallet.Float64ToXMR(0.1),
 		MinDelayMinutes:   1,
 		MaxDelayMinutes:   10,
+		ScanInterval:      time.Minute,
 	}
 }
 

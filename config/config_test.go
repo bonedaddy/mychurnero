@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/monero-ecosystem/go-monero-rpc-client/wallet"
 	"github.com/stretchr/testify/require"
@@ -23,7 +24,9 @@ func TestConfig(t *testing.T) {
 	require.Equal(t, int(cfg.ChurnAccountIndex), 1)
 	require.Equal(t, int(cfg.MinDelayMinutes), 1)
 	require.Equal(t, int(cfg.MaxDelayMinutes), 10)
+	require.Equal(t, cfg.ScanInterval, time.Minute)
 
+	// save the config file to disk
 	require.NoError(t, Save(cfg, testPath))
 
 	cfg2, err := Load(testPath)
@@ -36,5 +39,6 @@ func TestConfig(t *testing.T) {
 	require.Equal(t, int(cfg2.ChurnAccountIndex), 1)
 	require.Equal(t, int(cfg2.MinDelayMinutes), 1)
 	require.Equal(t, int(cfg2.MaxDelayMinutes), 10)
+	require.Equal(t, cfg.ScanInterval, time.Minute)
 
 }

@@ -18,17 +18,12 @@ import (
 // Service provides monero churning service that takes care of automatically scanning the wallet
 // determining which addresses need to be churned, and scheduling the sending of those addresses
 type Service struct {
-	mc         *client.Client
-	db         *db.Client
-	ctx        context.Context
-	cancel     context.CancelFunc
-	walletName string
-	// the account to use for receiving churned funds
-	churnAccountIndex uint64
-	minChurnAmount    uint64
-	min               int64
-	max               int64
-	l                 *zap.Logger
+	mc     *client.Client
+	db     *db.Client
+	ctx    context.Context
+	cancel context.CancelFunc
+	cfg    *config.Config
+	l      *zap.Logger
 }
 
 // New returns a new Service starting all needed internal subprocesses
@@ -62,7 +57,7 @@ func New(ctx context.Context, cfg *config.Config) (*Service, error) {
 	}
 	db.Setup()
 
-	return &Service{cl, db, ctx, cancel, cfg.WalletName, cfg.ChurnAccountIndex, cfg.MinChurnAmount, cfg.MinDelayMinutes, cfg.MaxDelayMinutes, l.Named("service")}, nil
+	return &Service{cl, db, ctx, cancel, cfg, l.Named("service")}, nil
 }
 
 // MC returns the underlying monero-wallet-rpc client
@@ -83,7 +78,7 @@ func (s *Service) Context() context.Context {
 // Start is used to start the churning service
 func (s *Service) Start() {
 
-	s.createChurnAccount(s.churnAccountIndex)
+	s.createChurnAccount(s.cfg.ChurnAccountIndex)
 	s.l.Info("mychurnero started")
 
 	go func() {
@@ -95,7 +90,7 @@ func (s *Service) Start() {
 		s.l.Info("scheduling transactions")
 		s.createTransactions()
 
-		getChurnTicker := time.NewTicker(time.Minute * 20)
+		getChurnTicker := time.NewTicker(s.cfg.ScanInterval)
 		defer getChurnTicker.Stop()
 
 		// TODO(bonedaddy): better time handling
@@ -141,7 +136,7 @@ func (s *Service) Close() error {
 
 // creates the account to churn funds ti if it does not exist
 func (s *Service) createChurnAccount(churnAccountIndex uint64) {
-	accts, err := s.mc.GetAccounts(s.walletName)
+	accts, err := s.mc.GetAccounts(s.cfg.WalletName)
 	if err != nil {
 		s.l.Error("failed to get all accounts", zap.Error(err))
 		return
@@ -155,7 +150,7 @@ func (s *Service) createChurnAccount(churnAccountIndex uint64) {
 	}
 
 	if !churnAcctExists {
-		resp, err := s.mc.NewAccount(s.walletName, "churn-account")
+		resp, err := s.mc.NewAccount(s.cfg.WalletName, "churn-account")
 		if err != nil {
 			s.l.Error("failed to create churn account", zap.Error(err))
 			return
@@ -169,11 +164,11 @@ func (s *Service) createChurnAccount(churnAccountIndex uint64) {
 
 // returns an address we can use to send churned funds to
 func (s *Service) getChurnToAddress() (string, error) {
-	return s.mc.NewAddress(s.walletName, s.churnAccountIndex)
+	return s.mc.NewAddress(s.cfg.WalletName, s.cfg.ChurnAccountIndex)
 }
 
 func (s *Service) handleGetChurnTick() {
-	addrs, err := s.mc.GetChurnableAddresses(s.walletName, s.churnAccountIndex, s.minChurnAmount)
+	addrs, err := s.mc.GetChurnableAddresses(s.cfg.WalletName, s.cfg.ChurnAccountIndex, s.cfg.MinChurnAmount)
 	if err != nil {
 		return
 	}
@@ -185,7 +180,7 @@ func (s *Service) handleGetChurnTick() {
 		for _, sub := range acct.Subaddresses {
 
 			if err := s.db.AddAddress(
-				s.walletName,
+				s.cfg.WalletName,
 				sub.Address,
 				acct.BaseAddress,
 				acct.AccountIndex,
@@ -226,7 +221,7 @@ func (s *Service) createTransactions() {
 			Destinations:   map[string]uint64{churnToAddr: uint64(addr.Balance)},
 			AccountIndex:   uint64(addr.AccountIndex),
 			SubaddrIndices: []uint64{uint64(addr.AddressIndex)},
-			WalletName:     s.walletName,
+			WalletName:     s.cfg.WalletName,
 			DoNotRelay:     true,
 		})
 		if err != nil {
@@ -259,7 +254,7 @@ func (s *Service) createTransactions() {
 				return
 			}
 
-			txHash, err := s.mc.Relay(s.walletName, txData.TxMetadata)
+			txHash, err := s.mc.Relay(s.cfg.WalletName, txData.TxMetadata)
 			if err != nil {
 				s.l.Error("failed to relay transaction", zap.Error(err), zap.String("metadata.sha256", txMetaHash))
 				return
@@ -285,7 +280,7 @@ func (s *Service) deleteSpentTransfers() {
 	}
 
 	for _, tx := range txs {
-		confirmed, err := s.mc.TxConfirmed(s.walletName, tx.TxHash)
+		confirmed, err := s.mc.TxConfirmed(s.cfg.WalletName, tx.TxHash)
 		if err != nil {
 			s.l.Error("failed to get tx confirmation status", zap.Error(err), zap.String("tx.hash", tx.TxHash))
 			continue
@@ -308,7 +303,7 @@ func (s *Service) hashMetadata(txMetadata string) string {
 }
 
 func (s *Service) getRandomSendDelay() time.Duration {
-	random := rand.Int63n(s.max-s.min+1) + s.min
+	random := rand.Int63n(s.cfg.MaxDelayMinutes-s.cfg.MinDelayMinutes+1) + s.cfg.MinDelayMinutes
 	dur := time.Duration(random) * time.Minute
 	return dur
 }
