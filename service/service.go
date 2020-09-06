@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/bonedaddy/mychurnero/client"
@@ -226,7 +227,9 @@ func (s *Service) createTransactions() {
 			WalletName:     s.cfg.WalletName,
 			DoNotRelay:     true,
 		})
-		if err != nil {
+		if err != nil && strings.Contains(err.Error(), "try /transfer_split") {
+			// handle transfer_split churn
+		} else if err != nil {
 			origErr := err.Error()
 			haveBal, err := s.mc.AddressBalance(
 				s.cfg.WalletName,

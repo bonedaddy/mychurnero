@@ -21,6 +21,36 @@ func main() {
 	app.Description = "mychurnero provides a service for automatically, and randomly churning monero accounts, as well as providing a framework for studying the effects of churning"
 	app.Commands = cli.Commands{
 		&cli.Command{
+			Name:  "new-address",
+			Usage: "generate a new address under the account index",
+			Action: func(c *cli.Context) error {
+				cl, err := client.NewClient(c.String("wallet.rpc_address"))
+				if err != nil {
+					return err
+				}
+				addr, err := cl.NewAddress(c.String("wallet.name"), c.Uint64("account.index"))
+				if err != nil {
+					return err
+				}
+				fmt.Println("new address: ", addr)
+				return cl.Close()
+			},
+		},
+		&cli.Command{
+			Name:  "new-wallet",
+			Usage: "create a new monero wallet",
+			Action: func(c *cli.Context) error {
+				cl, err := client.NewClient(c.String("wallet.rpc_address"))
+				if err != nil {
+					return err
+				}
+				if err := cl.CreateWallet(c.String("wallet.name")); err != nil {
+					return err
+				}
+				return cl.Close()
+			},
+		},
+		&cli.Command{
 			Name:    "convert-to-xmr",
 			Aliases: []string{"ctxm"},
 			Usage:   "converts an amount such as 0.1 to its corresponding XMR uint64 value",
@@ -87,7 +117,7 @@ func main() {
 			},
 		},
 		&cli.Command{
-			Name:  "get-address",
+			Name:  "get-addresses",
 			Usage: "returns all subaddresses underneath a given account index",
 			Action: func(c *cli.Context) error {
 				cl, err := client.NewClient(c.String("wallet.rpc_address"))

@@ -54,9 +54,9 @@ func (c *Client) GetChurnableAddresses(walletName string, churnAccountIndex, min
 			// primary account seems to be causing troubles using transfer and specific subaddr indices
 			// there is likely a better way around
 			// skip primary account
-			if addr.Label == "Primary account" {
-				continue
-			}
+			//if addr.Label == "Primary account" {
+			//	continue
+			//}
 			if addr.Used {
 				bal, err := c.AddressBalance(walletName, addr.Address, acct.AccountIndex, addr.AddressIndex)
 				if err != nil {
