@@ -83,7 +83,7 @@ func (s *Service) Start() {
 
 	s.createChurnAccount(s.cfg.ChurnAccountIndex)
 	s.l.Info("mychurnero started")
-
+	s.rescheduleTransactions()
 	go func() {
 		// call the ticker functions manually first
 		// since if we dont do this this we have to wait
@@ -312,6 +312,38 @@ func (s *Service) deleteSpentTransfers() {
 		}
 
 	}
+}
+
+// rescheduleTransactions should only be used at startup to see
+// if any existing unrelayed transactions are stored in the database, and if so
+// send it
+func (s *Service) rescheduleTransactions() error {
+	txs, err := s.db.GetUnrelayedTransactions()
+	if err != nil {
+		return err
+	}
+	for _, tx := range txs {
+		tx := tx
+		go func() {
+			now := time.Now()
+			if now.After(tx.SendTime) {
+				goto SEND
+			}
+			time.Sleep(tx.SendTime.Sub(now))
+			goto SEND
+		SEND:
+			txHash, err := s.mc.Relay(s.cfg.WalletName, tx.TxMetadata)
+			if err != nil {
+				s.l.Error("failed to relay transaction", zap.Error(err), zap.String("metadata.sh256", tx.TxMetadataHash))
+				return
+			}
+			if err := s.db.SetTxHash(tx.SourceAddress, tx.TxMetadataHash, txHash); err != nil {
+				s.l.Error("failed to set tx hash in database", zap.Error(err))
+				return
+			}
+		}()
+	}
+	return nil
 }
 
 func (s *Service) hashMetadata(txMetadata string) string {
