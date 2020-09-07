@@ -229,6 +229,8 @@ func (s *Service) createTransactions() {
 		})
 		if err != nil && strings.Contains(err.Error(), "try /transfer_split") {
 			// handle transfer_split churn
+			s.l.Error("transfer split required but not yet supported")
+			continue
 		} else if err != nil {
 			origErr := err.Error()
 			haveBal, err := s.mc.AddressBalance(
