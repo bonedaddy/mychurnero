@@ -1,6 +1,8 @@
 package db
 
 import (
+	"encoding/hex"
+	"encoding/json"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -22,9 +24,33 @@ type Address struct {
 // Transfer is a single transfer to churn an address
 type Transfer struct {
 	gorm.Model
-	SourceAddress string    // the sending address
-	TxMetadata    string    // the transaction metadata we use to relay
-	TxHash        string    // the hash of the transaction once relayed
-	SendTime      time.Time // the time at which we will relay the transaction
-	Spent         uint      // indicates if the tx is spent (ie broadcasted), 0 = false 1 = true
+	SourceAddress    string    // the sending address
+	TxMetadataEncode string    // the transaction metadata we use to relay, this is hex encoded and must be decoded into the TxMetadata struct
+	TxHash           string    // the hash of the transaction once relayed
+	SendTime         time.Time // the time at which we will relay the transaction
+	Spent            uint      // indicates if the tx is spent (ie broadcasted), 0 = false 1 = true
+}
+
+// TxMetadata used to hold one or more metadatas we need to relay
+type TxMetadata struct {
+	Entries []string
+}
+
+// GetMetadata is used to return a TxMetadata type from the encoded data
+func (t *Transfer) GetMetadata() (*TxMetadata, error) {
+	data, err := hex.DecodeString(t.TxMetadataEncode)
+	if err != nil {
+		return nil, err
+	}
+	var txm TxMetadata
+	return &txm, json.Unmarshal(data, &txm)
+}
+
+// Encode marshals an hex encodes the metadata struct
+func (txm *TxMetadata) Encode() (string, error) {
+	data, err := json.Marshal(txm)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(data), nil
 }

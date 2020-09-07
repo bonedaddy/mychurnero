@@ -118,7 +118,7 @@ func TestTransaction(t *testing.T) {
 
 	type args struct {
 		sender   string
-		metadata string
+		metadata TxMetadata
 		sendTime time.Time
 		spent    uint
 	}
@@ -129,16 +129,16 @@ func TestTransaction(t *testing.T) {
 		wantTxCount  int
 		wantSendable int
 	}{
-		{"1", args{"1", "1", time.Now().AddDate(0, 0, -1), 0}, false, 1, 1},
-		{"2", args{"2", "2", time.Now().Add(time.Hour), 1}, false, 2, 1},
-		{"3", args{"3", "3", time.Now().Add(time.Hour * 10), 1}, false, 3, 1},
-		{"4", args{"4", "4", time.Now().AddDate(0, 0, -2), 0}, false, 4, 2},
-		{"5", args{"5", "5", time.Now().AddDate(0, 0, -3), 0}, false, 5, 3},
+		{"1", args{"1", TxMetadata{Entries: []string{"1"}}, time.Now().AddDate(0, 0, -1), 0}, false, 1, 1},
+		{"2", args{"2", TxMetadata{Entries: []string{"2"}}, time.Now().Add(time.Hour), 1}, false, 2, 1},
+		{"3", args{"3", TxMetadata{Entries: []string{"3"}}, time.Now().Add(time.Hour * 10), 1}, false, 3, 1},
+		{"4", args{"4", TxMetadata{Entries: []string{"4"}}, time.Now().AddDate(0, 0, -2), 0}, false, 4, 2},
+		{"5", args{"5", TxMetadata{Entries: []string{"5"}}, time.Now().AddDate(0, 0, -3), 0}, false, 5, 3},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			err := db.AddTransaction(tt.args.sender, tt.args.metadata, tt.args.sendTime)
+			err := db.AddTransaction(&tt.args.metadata, tt.args.sender, tt.args.sendTime)
 			require.NoError(t, err)
 
 			err = db.SetTxSpent(tt.args.sender, tt.args.spent)
@@ -146,7 +146,9 @@ func TestTransaction(t *testing.T) {
 
 			tx, err := db.GetTransaction(tt.args.sender)
 			require.NoError(t, err)
-			require.Equal(t, tx.TxMetadata, tt.args.metadata)
+			md, err := tx.GetMetadata()
+			require.NoError(t, err)
+			require.Equal(t, tt.args.metadata, *md)
 			require.Equal(t, int(tx.Spent), int(tt.args.spent))
 			require.True(t, tx.SendTime.Equal(tt.args.sendTime))
 
