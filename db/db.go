@@ -171,6 +171,13 @@ func (c *Client) AddTransaction(sourceAddress, txMetadata, metaDataHash string, 
 	}).Error
 }
 
+// GetUnrelayedTransactions returns transactinos which have been scheduled
+// but not yet relayed
+func (c *Client) GetUnrelayedTransactions() ([]Transfer, error) {
+	var txs []Transfer
+	return txs, c.db.Model(&Transfer{}).Where(`tx_hash = ""`).Find(&txs).Error
+}
+
 // GetRelayedTransactions returns all currently relayed transactions
 func (c *Client) GetRelayedTransactions() ([]Transfer, error) {
 	var txs []Transfer
