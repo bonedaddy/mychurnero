@@ -138,8 +138,8 @@ func (c *Client) ScheduleTransaction(sourceAddress, txMetadata, metadataHash str
 
 // DeleteTransaction is used to remove transaction data from our database
 // we do this once the transaction has been confirmed and to purge evidence of the churn
-func (c *Client) DeleteTransaction(sourceAddress, txHash string) error {
-	tx, err := c.GetTransaction(sourceAddress)
+func (c *Client) DeleteTransaction(sourceAddress, txHash, metaDataHash string) error {
+	tx, err := c.GetTransaction(sourceAddress, metaDataHash)
 	if err != nil {
 		return err
 	}
@@ -161,12 +161,13 @@ func (c *Client) DeleteTransaction(sourceAddress, txHash string) error {
 }
 
 // AddTransaction is used to store a transaction that we need to relay
-func (c *Client) AddTransaction(sourceAddress, txMetadata string, sendTime time.Time) error {
+func (c *Client) AddTransaction(sourceAddress, txMetadata, metaDataHash string, sendTime time.Time) error {
 	return c.db.Create(&Transfer{
-		SourceAddress: sourceAddress,
-		TxMetadata:    txMetadata,
-		SendTime:      sendTime,
-		Spent:         0,
+		SourceAddress:  sourceAddress,
+		TxMetadata:     txMetadata,
+		TxMetadataHash: metaDataHash,
+		SendTime:       sendTime,
+		Spent:          0,
 	}).Error
 }
 
@@ -177,8 +178,8 @@ func (c *Client) GetRelayedTransactions() ([]Transfer, error) {
 }
 
 // SetTxHash sets the transaction hash for the corresponding churn
-func (c *Client) SetTxHash(sourceAddress string, txHash string) error {
-	tx, err := c.GetTransaction(sourceAddress)
+func (c *Client) SetTxHash(sourceAddress, metaDataHash, txHash string) error {
+	tx, err := c.GetTransaction(sourceAddress, metaDataHash)
 	if err != nil {
 		return err
 	}
@@ -186,8 +187,8 @@ func (c *Client) SetTxHash(sourceAddress string, txHash string) error {
 }
 
 // SetTxSpent sets the spent field on a transfer entry
-func (c *Client) SetTxSpent(sourceAddress string, spent uint) error {
-	tx, err := c.GetTransaction(sourceAddress)
+func (c *Client) SetTxSpent(sourceAddress, metaDataHash string, spent uint) error {
+	tx, err := c.GetTransaction(sourceAddress, metaDataHash)
 	if err != nil {
 		return err
 	}
@@ -195,9 +196,9 @@ func (c *Client) SetTxSpent(sourceAddress string, spent uint) error {
 }
 
 // GetTransaction returns the first matching transaction
-func (c *Client) GetTransaction(sourceAddress string) (*Transfer, error) {
+func (c *Client) GetTransaction(sourceAddress, metaDataHash string) (*Transfer, error) {
 	var tx Transfer
-	return &tx, c.db.Model(&Transfer{}).First(&tx, "source_address = ?", sourceAddress).Error
+	return &tx, c.db.Model(&Transfer{}).First(&tx, "source_address = ? AND tx_metadata_hash = ?", sourceAddress, metaDataHash).Error
 }
 
 // GetTransactions returns all known transactions

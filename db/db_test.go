@@ -1,6 +1,8 @@
 package db
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"testing"
 	"time"
@@ -137,16 +139,18 @@ func TestTransaction(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			err := db.AddTransaction(tt.args.sender, tt.args.metadata, tt.args.sendTime)
+			metaHashB := sha256.Sum256([]byte(tt.args.metadata))
+			metaHash := hex.EncodeToString(metaHashB[:])
+			err := db.AddTransaction(tt.args.sender, tt.args.metadata, metaHash, tt.args.sendTime)
 			require.NoError(t, err)
 
-			err = db.SetTxSpent(tt.args.sender, tt.args.spent)
+			err = db.SetTxSpent(tt.args.sender, metaHash, tt.args.spent)
 			require.NoError(t, err)
 
-			tx, err := db.GetTransaction(tt.args.sender)
+			tx, err := db.GetTransaction(tt.args.sender, metaHash)
 			require.NoError(t, err)
 			require.Equal(t, tx.TxMetadata, tt.args.metadata)
+			require.Equal(t, tx.TxMetadataHash, metaHash)
 			require.Equal(t, int(tx.Spent), int(tt.args.spent))
 			require.True(t, tx.SendTime.Equal(tt.args.sendTime))
 

@@ -219,6 +219,7 @@ func (s *Service) createTransactions() {
 		}
 
 		sendAmt := s.getRandomBalance(uint64(addr.Balance))
+		var metaDataHashes []string
 		resp, err := s.mc.Transfer(client.TransferOpts{
 			Priority:       client.RandomPriority(),
 			Destinations:   map[string]uint64{churnToAddr: sendAmt},
@@ -228,72 +229,62 @@ func (s *Service) createTransactions() {
 			DoNotRelay:     true,
 		})
 		if err != nil && strings.Contains(err.Error(), "try /transfer_split") {
-			// handle transfer_split churn
-		} else if err != nil {
-			origErr := err.Error()
-			haveBal, err := s.mc.AddressBalance(
-				s.cfg.WalletName,
-				addr.Address,
-				uint64(addr.AccountIndex),
-				uint64(addr.AddressIndex),
-			)
+			resp, err := s.mc.TransferSplit(client.TransferOpts{
+				Priority:       client.RandomPriority(),
+				Destinations:   map[string]uint64{churnToAddr: sendAmt},
+				AccountIndex:   uint64(addr.AccountIndex),
+				SubaddrIndices: []uint64{uint64(addr.AddressIndex)},
+				WalletName:     s.cfg.WalletName,
+				DoNotRelay:     true,
+			})
 			if err != nil {
-				s.l.Error(
-					"failed to lookup address balance",
-					zap.Error(err),
-					zap.String("address", addr.Address),
-				)
+				s.l.Error("failed to create split transfer", zap.Error(err))
 				continue
 			}
-			s.l.Error(
-				"failed to create transfer",
-				zap.String("error", origErr),
-				zap.String("address", addr.Address),
-				zap.Uint64("balance.have", haveBal),
-				zap.Uint64("balance.want", sendAmt),
-			)
+			for _, meta := range resp.TxMetadataList {
+				metaDataHashes = append(metaDataHashes, meta)
+			}
+		} else if err != nil {
+			s.l.Error("failed to create transfer", zap.String("address", addr.Address))
 			continue
+		} else {
+			metaDataHashes = append(metaDataHashes, resp.TxMetadata)
 		}
 
-		txMetaHash := s.hashMetadata(resp.TxMetadata)
-		delay := s.getRandomSendDelay()
-		sendTime := time.Now().Add(delay)
-		s.l.Info("unrelayed transaction created", zap.String("metadata.sha256", txMetaHash), zap.Float64("delay.minutes", delay.Minutes()))
+		for _, meta := range metaDataHashes {
 
-		if err := s.db.ScheduleTransaction(addr.Address, resp.TxMetadata, txMetaHash, sendTime); err != nil {
-			s.l.Error("failed to schedule transaction", zap.Error(err), zap.String("metadata.sha256", txMetaHash))
-			continue
+			txMetaHash := s.hashMetadata(meta)
+			delay := s.getRandomSendDelay()
+			sendTime := time.Now().Add(delay)
+			s.l.Info("unrelayed transaction created", zap.String("metadata.sha256", txMetaHash), zap.Float64("delay.minutes", delay.Minutes()))
+			if err := s.db.ScheduleTransaction(addr.Address, meta, txMetaHash, sendTime); err != nil {
+				s.l.Error("failed to schedule transaction", zap.Error(err), zap.String("metadata.sha256", txMetaHash))
+				continue
+			}
+			// TODO(bonedaddy): enable better scheduling instead of creating a bunch of goroutiens
+			go func(sourceAddr string) {
+				now := time.Now()
+				diff := sendTime.Sub(now)
+				ticker := time.NewTicker(diff)
+				<-ticker.C
+				ticker.Stop()
+				txData, err := s.db.GetTransaction(sourceAddr, txMetaHash)
+				if err != nil {
+					s.l.Error("failed to get transaction from database", zap.Error(err), zap.String("metadata.sha256", txMetaHash))
+					return
+				}
+				txHash, err := s.mc.Relay(s.cfg.WalletName, txData.TxMetadata)
+				if err != nil {
+					s.l.Error("failed to relay transaction", zap.Error(err), zap.String("metadata.sha256", txMetaHash))
+					return
+				}
+				if err := s.db.SetTxHash(sourceAddr, txMetaHash, txHash); err != nil {
+					s.l.Error("Failed to set tx hash in database", zap.Error(err))
+					return
+				}
+				s.l.Info("successfully relayed transaction", zap.String("metadata.sha256", txMetaHash), zap.String("tx.hash", txHash))
+			}(addr.Address)
 		}
-
-		// TODO(bonedaddy): enable better scheduling instead of creating a bunch of goroutiens
-		go func(sourceAddr string) {
-
-			now := time.Now()
-			diff := sendTime.Sub(now)
-			ticker := time.NewTicker(diff)
-			<-ticker.C
-			ticker.Stop()
-
-			txData, err := s.db.GetTransaction(sourceAddr)
-			if err != nil {
-				s.l.Error("failed to get transaction from database", zap.Error(err), zap.String("metadata.sha256", txMetaHash))
-				return
-			}
-
-			txHash, err := s.mc.Relay(s.cfg.WalletName, txData.TxMetadata)
-			if err != nil {
-				s.l.Error("failed to relay transaction", zap.Error(err), zap.String("metadata.sha256", txMetaHash))
-				return
-			}
-
-			if err := s.db.SetTxHash(sourceAddr, txHash); err != nil {
-				s.l.Error("Failed to set tx hash in database", zap.Error(err))
-				return
-			}
-
-			s.l.Info("successfully relayed transaction", zap.String("metadata.sha256", txMetaHash), zap.String("tx.hash", txHash))
-
-		}(addr.Address)
 
 	}
 }
@@ -313,7 +304,7 @@ func (s *Service) deleteSpentTransfers() {
 		}
 
 		if confirmed {
-			if err := s.db.DeleteTransaction(tx.SourceAddress, tx.TxHash); err != nil {
+			if err := s.db.DeleteTransaction(tx.SourceAddress, tx.TxHash, tx.TxMetadataHash); err != nil {
 				s.l.Error("failed to delete transaction from database", zap.Error(err), zap.String("tx.hash", tx.TxHash))
 				continue
 			}
