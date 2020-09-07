@@ -44,6 +44,36 @@ func (c *Client) TxConfirmed(walletName, txHash string) (bool, error) {
 	return false, nil
 }
 
+// TransferSplit allows splitting up a transaction into smaller one, useful
+// for situations where Transfer returns an error due to to large of a transaction
+func (c *Client) TransferSplit(opts TransferOpts) (*wallet.ResponseTransferSplit, error) {
+	if err := c.OpenWallet(opts.WalletName); err != nil {
+		return nil, err
+	}
+
+	var destinations []*wallet.Destination
+
+	for k, v := range opts.Destinations {
+		destinations = append(destinations, &wallet.Destination{
+			Address: k,
+			Amount:  v,
+		})
+	}
+
+	return c.mw.TransferSplit(&wallet.RequestTransferSplit{
+		Mixin:          10,
+		RingSize:       11,
+		Priority:       opts.Priority,
+		GetTxHex:       true,
+		GetxKeys:       true, // TODO: needs to change
+		GetTxMetadata:  true,
+		DoNotRelay:     opts.DoNotRelay,
+		AccountIndex:   opts.AccountIndex,
+		SubaddrIndices: opts.SubaddrIndices,
+		Destinations:   destinations,
+	})
+}
+
 // Transfer is used to transfer funds from the given wallet to the destination address
 func (c *Client) Transfer(opts TransferOpts) (*wallet.ResponseTransfer, error) {
 	if err := c.OpenWallet(opts.WalletName); err != nil {
@@ -59,8 +89,8 @@ func (c *Client) Transfer(opts TransferOpts) (*wallet.ResponseTransfer, error) {
 		})
 	}
 
-	resp, err := c.mw.Transfer(&wallet.RequestTransfer{
-		Mixing:         10,
+	return c.mw.Transfer(&wallet.RequestTransfer{
+		Mixing:         10, // TODO: needs to change
 		RingSize:       11,
 		Priority:       opts.Priority,
 		GetTxHex:       true,
@@ -71,10 +101,6 @@ func (c *Client) Transfer(opts TransferOpts) (*wallet.ResponseTransfer, error) {
 		SubaddrIndices: opts.SubaddrIndices,
 		Destinations:   destinations,
 	})
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
 }
 
 // Relay is used to relay an unbroadcasted transaction returning the tx hash
