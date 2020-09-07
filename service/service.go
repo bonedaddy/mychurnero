@@ -245,7 +245,7 @@ func (s *Service) createTransactions() {
 				metaDataHashes = append(metaDataHashes, meta)
 			}
 		} else if err != nil {
-			s.l.Error("failed to create transfer", zap.String("address", addr.Address))
+			s.l.Error("failed to create transfer", zap.String("address", addr.Address), zap.Error(err))
 			continue
 		} else {
 			metaDataHashes = append(metaDataHashes, resp.TxMetadata)
