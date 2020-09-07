@@ -260,7 +260,7 @@ func (s *Service) createTransactions() {
 		sendTime := time.Now().Add(delay)
 		s.l.Info("unrelayed transaction created", zap.String("metadata.sha256", txMetaHash), zap.Float64("delay.minutes", delay.Minutes()))
 
-		if err := s.db.ScheduleTransaction(addr.Address, resp.TxMetadata, sendTime); err != nil {
+		if err := s.db.ScheduleTransaction(addr.Address, resp.TxMetadata, txMetaHash, sendTime); err != nil {
 			s.l.Error("failed to schedule transaction", zap.Error(err), zap.String("metadata.sha256", txMetaHash))
 			continue
 		}

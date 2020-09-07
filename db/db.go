@@ -113,7 +113,7 @@ func (c *Client) GetAddresses() ([]Address, error) {
 // ScheduleTransaction is used to persist transaction metadata information to disk, marking the
 // associated address as being scheduled. This means anytime during startup, we can reschedule transactions
 // in case the program exists with pending transactions
-func (c *Client) ScheduleTransaction(sourceAddress, txMetadata string, sendTime time.Time) error {
+func (c *Client) ScheduleTransaction(sourceAddress, txMetadata, metadataHash string, sendTime time.Time) error {
 	return c.db.Transaction(func(db *gorm.DB) error {
 		var addr Address
 
@@ -127,10 +127,11 @@ func (c *Client) ScheduleTransaction(sourceAddress, txMetadata string, sendTime 
 		}
 
 		return db.Create(&Transfer{
-			SourceAddress: sourceAddress,
-			TxMetadata:    txMetadata,
-			SendTime:      sendTime,
-			Spent:         0,
+			SourceAddress:  sourceAddress,
+			TxMetadata:     txMetadata,
+			TxMetadataHash: metadataHash,
+			SendTime:       sendTime,
+			Spent:          0,
 		}).Error
 	})
 }
