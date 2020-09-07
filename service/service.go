@@ -260,7 +260,7 @@ func (s *Service) createTransactions() {
 		sendTime := time.Now().Add(delay)
 		s.l.Info("unrelayed transaction created", zap.String("metadata.sha256", txMetaHash), zap.Float64("delay.minutes", delay.Minutes()))
 
-		if err := s.db.ScheduleTransaction(addr.Address, resp.TxMetadata, sendTime); err != nil {
+		if err := s.db.ScheduleTransaction(&db.TxMetadata{Entries: []string{resp.TxMetadata}}, addr.Address, sendTime); err != nil {
 			s.l.Error("failed to schedule transaction", zap.Error(err), zap.String("metadata.sha256", txMetaHash))
 			continue
 		}
@@ -279,19 +279,27 @@ func (s *Service) createTransactions() {
 				s.l.Error("failed to get transaction from database", zap.Error(err), zap.String("metadata.sha256", txMetaHash))
 				return
 			}
-
-			txHash, err := s.mc.Relay(s.cfg.WalletName, txData.TxMetadata)
+			metadata, err := txData.GetMetadata()
 			if err != nil {
-				s.l.Error("failed to relay transaction", zap.Error(err), zap.String("metadata.sha256", txMetaHash))
-				return
+				s.l.Error("failed to extract transaction metadata", zap.Error(err))
 			}
+			// TODO(bonedaddy): better support multiple transactions
+			// right now the database model only supports 1 source address per transaction
+			// and because a split transaction will have to do multiple parts this needs to be refactored
+			for _, meta := range metadata.Entries {
+				txHash, err := s.mc.Relay(s.cfg.WalletName, meta)
+				if err != nil {
+					s.l.Error("failed to relay transaction", zap.Error(err), zap.String("metadata.sha256", txMetaHash))
+					return
+				}
 
-			if err := s.db.SetTxHash(sourceAddr, txHash); err != nil {
-				s.l.Error("Failed to set tx hash in database", zap.Error(err))
-				return
+				if err := s.db.SetTxHash(sourceAddr, txHash); err != nil {
+					s.l.Error("Failed to set tx hash in database", zap.Error(err))
+					return
+				}
+
+				s.l.Info("successfully relayed transaction", zap.String("metadata.sha256", txMetaHash), zap.String("tx.hash", txHash))
 			}
-
-			s.l.Info("successfully relayed transaction", zap.String("metadata.sha256", txMetaHash), zap.String("tx.hash", txHash))
 
 		}(addr.Address)
 
