@@ -422,6 +422,9 @@ func (s *Service) handleTxFail(address string, sendAmt, accountIndex, addressInd
 	s.l.Error(
 		"failed to create transfer",
 		zap.Error(txErr),
+		zap.String("sender.address", address),
+		zap.Uint64("account.index", accountIndex),
+		zap.Uint64("address.index", addressIndex),
 		zap.Uint64("send.amount", sendAmt),
 		zap.Uint64("address.balance", haveBal),
 	)
