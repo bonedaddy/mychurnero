@@ -171,17 +171,17 @@ func (s *Service) getChurnToAddress() (string, error) {
 }
 
 func (s *Service) handleGetChurnTick() {
-	addrs, err := s.mc.GetChurnableAddresses(s.cfg.WalletName, s.cfg.ChurnAccountIndex, s.cfg.MinChurnAmount)
+	addrs, err := s.mc.GetChurnableAddresses(
+		s.cfg.WalletName,
+		s.cfg.ChurnAccountIndex,
+		s.cfg.MinChurnAmount,
+	)
 	if err != nil {
 		return
 	}
-
 	var toChurn int
-
 	for _, acct := range addrs.Accounts {
-
 		for _, sub := range acct.Subaddresses {
-
 			if err := s.db.AddAddress(
 				s.cfg.WalletName,
 				sub.Address,
@@ -190,15 +190,16 @@ func (s *Service) handleGetChurnTick() {
 				sub.AddressIndex,
 				sub.Balance,
 			); err != nil {
-				s.l.Error("failed to add address to database", zap.String("address", sub.Address), zap.Error(err))
+				s.l.Error(
+					"failed to add address to database",
+					zap.String("address", sub.Address),
+					zap.Error(err),
+				)
 			} else {
 				toChurn++
 			}
-
 		}
-
 	}
-
 	if toChurn > 0 {
 		s.l.Info("churnable addresses found", zap.Int("count", toChurn))
 	}
@@ -222,9 +223,24 @@ func (s *Service) createTransactions() {
 			txMetaHash := s.hashMetadata(meta)
 			delay := s.getRandomSendDelay()
 			sendTime := time.Now().Add(delay)
-			s.l.Info("unrelayed transaction created", zap.String("metadata.sha256", txMetaHash), zap.Float64("delay.minutes", delay.Minutes()))
-			if err := s.db.ScheduleTransaction(addr.Address, meta, txMetaHash, sendTime); err != nil {
-				s.l.Error("failed to schedule transaction", zap.Error(err), zap.String("metadata.sha256", txMetaHash))
+
+			s.l.Info(
+				"unrelayed transaction created",
+				zap.String("metadata.sha256", txMetaHash),
+				zap.Float64("delay.minutes", delay.Minutes()),
+			)
+
+			if err := s.db.ScheduleTransaction(
+				addr.Address,
+				meta,
+				txMetaHash,
+				sendTime,
+			); err != nil {
+				s.l.Error(
+					"failed to schedule transaction",
+					zap.Error(err),
+					zap.String("metadata.sha256", txMetaHash),
+				)
 				continue
 			}
 			// TODO(bonedaddy): enable better scheduling instead of creating a bunch of goroutiens
@@ -236,7 +252,11 @@ func (s *Service) createTransactions() {
 				ticker.Stop()
 				tx, err := s.db.GetTransaction(sourceAddr, txMetaHash)
 				if err != nil {
-					s.l.Error("failed to get transaction from database", zap.Error(err), zap.String("metadata.sha256", txMetaHash))
+					s.l.Error(
+						"failed to get transaction from database",
+						zap.Error(err),
+						zap.String("metadata.sha256", txMetaHash),
+					)
 					return
 				}
 				s.relayTx(sourceAddr, tx.TxMetadata, txMetaHash)
@@ -249,20 +269,35 @@ func (s *Service) createTransactions() {
 func (s *Service) deleteSpentTransfers() {
 	txs, err := s.db.GetRelayedTransactions()
 	if err != nil {
-		s.l.Error("failed to get relayed transactions from database", zap.Error(err))
+		s.l.Error(
+			"failed to get relayed transactions from database",
+			zap.Error(err),
+		)
 		return
 	}
 
 	for _, tx := range txs {
 		confirmed, err := s.mc.TxConfirmed(s.cfg.WalletName, tx.TxHash)
 		if err != nil {
-			s.l.Error("failed to get tx confirmation status", zap.Error(err), zap.String("tx.hash", tx.TxHash))
+			s.l.Error(
+				"failed to get tx confirmation status",
+				zap.Error(err),
+				zap.String("tx.hash", tx.TxHash),
+			)
 			continue
 		}
 
 		if confirmed {
-			if err := s.db.DeleteTransaction(tx.SourceAddress, tx.TxHash, tx.TxMetadataHash); err != nil {
-				s.l.Error("failed to delete transaction from database", zap.Error(err), zap.String("tx.hash", tx.TxHash))
+			if err := s.db.DeleteTransaction(
+				tx.SourceAddress,
+				tx.TxHash,
+				tx.TxMetadataHash,
+			); err != nil {
+				s.l.Error(
+					"failed to delete transaction from database",
+					zap.Error(err),
+					zap.String("tx.hash", tx.TxHash),
+				)
 				continue
 			}
 			s.l.Error("transaction purged from database", zap.String("tx.hash", tx.TxHash))
