@@ -400,10 +400,29 @@ func (s *Service) handleCreateTx(addr db.Address) []string {
 			metaDataHashes = append(metaDataHashes, meta)
 		}
 	} else if err != nil {
-		s.l.Error("failed to create transfer", zap.String("address", addr.Address), zap.Error(err))
+		s.handleTxFail(
+			addr.Address,
+			sendAmt,
+			uint64(addr.AccountIndex),
+			uint64(addr.AddressIndex),
+			err,
+		)
 		return nil
 	} else {
 		metaDataHashes = append(metaDataHashes, resp.TxMetadata)
 	}
 	return metaDataHashes
+}
+
+func (s *Service) handleTxFail(address string, sendAmt, accountIndex, addressIndex uint64, txErr error) {
+	haveBal, err := s.mc.AddressBalance(s.cfg.WalletName, address, accountIndex, addressIndex)
+	if err != nil {
+		return
+	}
+	s.l.Error(
+		"failed to create transfer",
+		zap.Error(txErr),
+		zap.Uint64("send.amount", sendAmt),
+		zap.Uint64("address.balance", haveBal),
+	)
 }
