@@ -212,43 +212,9 @@ func (s *Service) createTransactions() {
 
 	for _, addr := range addrs {
 
-		churnToAddr, err := s.getChurnToAddress()
-		if err != nil {
-			s.l.Error("failed to get churn to address", zap.Error(err))
+		metaDataHashes := s.handleCreateTx(addr)
+		if metaDataHashes == nil {
 			continue
-		}
-
-		sendAmt := s.getRandomBalance(uint64(addr.Balance))
-		var metaDataHashes []string
-		resp, err := s.mc.Transfer(client.TransferOpts{
-			Priority:       client.RandomPriority(),
-			Destinations:   map[string]uint64{churnToAddr: sendAmt},
-			AccountIndex:   uint64(addr.AccountIndex),
-			SubaddrIndices: []uint64{uint64(addr.AddressIndex)},
-			WalletName:     s.cfg.WalletName,
-			DoNotRelay:     true,
-		})
-		if err != nil && strings.Contains(err.Error(), "try /transfer_split") {
-			resp, err := s.mc.TransferSplit(client.TransferOpts{
-				Priority:       client.RandomPriority(),
-				Destinations:   map[string]uint64{churnToAddr: sendAmt},
-				AccountIndex:   uint64(addr.AccountIndex),
-				SubaddrIndices: []uint64{uint64(addr.AddressIndex)},
-				WalletName:     s.cfg.WalletName,
-				DoNotRelay:     true,
-			})
-			if err != nil {
-				s.l.Error("failed to create split transfer", zap.Error(err))
-				continue
-			}
-			for _, meta := range resp.TxMetadataList {
-				metaDataHashes = append(metaDataHashes, meta)
-			}
-		} else if err != nil {
-			s.l.Error("failed to create transfer", zap.String("address", addr.Address), zap.Error(err))
-			continue
-		} else {
-			metaDataHashes = append(metaDataHashes, resp.TxMetadata)
 		}
 
 		for _, meta := range metaDataHashes {
@@ -363,4 +329,46 @@ func (s *Service) relayTx(sourceAddr, txData, metaHash string) {
 		return
 	}
 	s.logRelay(txHash)
+}
+
+func (s *Service) handleCreateTx(addr db.Address) []string {
+	churnToAddr, err := s.getChurnToAddress()
+	if err != nil {
+		s.l.Error("failed to get churn to address", zap.Error(err))
+		return nil
+	}
+
+	sendAmt := s.getRandomBalance(uint64(addr.Balance))
+	var metaDataHashes []string
+	resp, err := s.mc.Transfer(client.TransferOpts{
+		Priority:       client.RandomPriority(),
+		Destinations:   map[string]uint64{churnToAddr: sendAmt},
+		AccountIndex:   uint64(addr.AccountIndex),
+		SubaddrIndices: []uint64{uint64(addr.AddressIndex)},
+		WalletName:     s.cfg.WalletName,
+		DoNotRelay:     true,
+	})
+	if err != nil && strings.Contains(err.Error(), "try /transfer_split") {
+		resp, err := s.mc.TransferSplit(client.TransferOpts{
+			Priority:       client.RandomPriority(),
+			Destinations:   map[string]uint64{churnToAddr: sendAmt},
+			AccountIndex:   uint64(addr.AccountIndex),
+			SubaddrIndices: []uint64{uint64(addr.AddressIndex)},
+			WalletName:     s.cfg.WalletName,
+			DoNotRelay:     true,
+		})
+		if err != nil {
+			s.l.Error("failed to create split transfer", zap.Error(err))
+			return nil
+		}
+		for _, meta := range resp.TxMetadataList {
+			metaDataHashes = append(metaDataHashes, meta)
+		}
+	} else if err != nil {
+		s.l.Error("failed to create transfer", zap.String("address", addr.Address), zap.Error(err))
+		return nil
+	} else {
+		metaDataHashes = append(metaDataHashes, resp.TxMetadata)
+	}
+	return metaDataHashes
 }
