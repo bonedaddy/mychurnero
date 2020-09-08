@@ -268,21 +268,12 @@ func (s *Service) createTransactions() {
 				ticker := time.NewTicker(diff)
 				<-ticker.C
 				ticker.Stop()
-				txData, err := s.db.GetTransaction(sourceAddr, txMetaHash)
+				tx, err := s.db.GetTransaction(sourceAddr, txMetaHash)
 				if err != nil {
 					s.l.Error("failed to get transaction from database", zap.Error(err), zap.String("metadata.sha256", txMetaHash))
 					return
 				}
-				txHash, err := s.mc.Relay(s.cfg.WalletName, txData.TxMetadata)
-				if err != nil {
-					s.l.Error("failed to relay transaction", zap.Error(err), zap.String("metadata.sha256", txMetaHash))
-					return
-				}
-				if err := s.db.SetTxHash(sourceAddr, txMetaHash, txHash); err != nil {
-					s.l.Error("Failed to set tx hash in database", zap.Error(err))
-					return
-				}
-				s.l.Info("successfully relayed transaction", zap.String("metadata.sha256", txMetaHash), zap.String("tx.hash", txHash))
+				s.relayTx(sourceAddr, tx.TxMetadata, txMetaHash)
 			}(addr.Address)
 		}
 
@@ -332,15 +323,7 @@ func (s *Service) rescheduleTransactions() error {
 			time.Sleep(tx.SendTime.Sub(now))
 			goto SEND
 		SEND:
-			txHash, err := s.mc.Relay(s.cfg.WalletName, tx.TxMetadata)
-			if err != nil {
-				s.l.Error("failed to relay transaction", zap.Error(err), zap.String("metadata.sh256", tx.TxMetadataHash))
-				return
-			}
-			if err := s.db.SetTxHash(tx.SourceAddress, tx.TxMetadataHash, txHash); err != nil {
-				s.l.Error("failed to set tx hash in database", zap.Error(err))
-				return
-			}
+			s.relayTx(tx.SourceAddress, tx.TxMetadata, tx.TxMetadataHash)
 		}()
 	}
 	return nil
@@ -367,4 +350,17 @@ func (s *Service) getRandomBalance(currentBalance uint64) uint64 {
 	return uint64(rand.Int63n(
 		int64(currentBalance)-int64(s.cfg.MinChurnAmount)+1,
 	) + int64(s.cfg.MinChurnAmount))
+}
+
+func (s *Service) relayTx(sourceAddr, txData, metaHash string) {
+	txHash, err := s.mc.Relay(s.cfg.WalletName, txData)
+	if err != nil {
+		s.l.Error("failed to relay transaction", zap.Error(err), zap.String("metadata.sha256", metaHash))
+		return
+	}
+	if err := s.db.SetTxHash(sourceAddr, metaHash, txHash); err != nil {
+		s.l.Error("Failed to set tx hash in database", zap.Error(err))
+		return
+	}
+	s.logRelay(txHash)
 }
