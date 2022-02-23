@@ -1,8 +1,8 @@
 # mychurnero
 
-Mychurnero is a monero churning service that allows you to automatically, and randomly churn your monero. It coordinates churning by storing information in a local sqlite3 database, as opposed to using wallet tags which are persisted within the monero wallet. This allows you to securely churn from a remote location, without disclosing possibly identifying tags to the monero-wallet-rpc node. This is experimental software, and the benefits of churning are not conclusive. As such please make sure you read the warnings section down below.
+> **entirely unaudited, untested, user beware**
 
-Interested in supporting mychurnero development? Send XMR to `87Gkfh2VPLjJQ1EYkSXzs6GBbY3Arwm1NJKpkyhQzbf7R8iu8VSnjFDC23vaUc5TFK7boZtPV2kXhSQYZenwtWTzPGdRBds`
+Mychurnero is a monero churning service that allows you to automatically, and randomly churn your monero. It coordinates churning by storing information in a local sqlite3 database, as opposed to using wallet tags which are persisted within the monero wallet. This allows you to securely churn from a remote location, without disclosing possibly identifying tags to the monero-wallet-rpc node. This is experimental software, and the benefits of churning are not conclusive. As such please make sure you read the warnings section down below.
 
 # terminology
 
